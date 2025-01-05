@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:expense_tracker/database/fieldsmodel.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -5,12 +7,11 @@ import 'transmodel.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
+  static Database? _database;
 
   factory DatabaseHelper() => _instance;
 
   DatabaseHelper._internal();
-
-  static Database? _database;
 
   Future<Database?> get database async {
     if (_database != null) return _database;
@@ -19,7 +20,9 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'expense_manager.db');
+    final String path = join(await getDatabasesPath(), 'expense_tracker.db');
+    print('Database path: $path'); // Debug print to verify path
+
     return await openDatabase(
       path,
       version: 1,
@@ -29,13 +32,12 @@ class DatabaseHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE Alldata (
+      CREATE TABLE IF NOT EXISTS Alldata (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         account TEXT,
         section TEXT,
         category TEXT,
         subCategory TEXT,
-        
         amount REAL,
         cd TEXT,
         note TEXT,
@@ -45,14 +47,63 @@ class DatabaseHelper {
         tax TEXT
       )
     ''');
-    await db
-        .execute('CREATE TABLE Accounts (name TEXT PRIMARY KEY, icon INTEGER)');
-    await db
-        .execute('CREATE TABLE Sections (name TEXT PRIMARY KEY, icon INTEGER)');
-    await db.execute(
-        'CREATE TABLE Categories (name TEXT PRIMARY KEY, icon INTEGER)');
-    await db.execute(
-        'CREATE TABLE Subcategories (name TEXT PRIMARY KEY, icon INTEGER)');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS Accounts (
+        name TEXT PRIMARY KEY, 
+        icon INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS Sections (
+        name TEXT PRIMARY KEY, 
+        icon INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS Categories (
+        name TEXT PRIMARY KEY, 
+        icon INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS Subcategories (
+        name TEXT PRIMARY KEY, 
+        icon INTEGER
+      )
+    ''');
+  }
+
+  // Method to ensure database exists and is initialized
+  Future<void> ensureDatabase() async {
+    final db = await database;
+    if (db == null) {
+      throw Exception('Failed to initialize database');
+    }
+  }
+
+  // Method to check if database exists
+  Future<bool> databaseExists() async {
+    final String path = join(await getDatabasesPath(), 'expense_tracker.db');
+    return await File(path).exists();
+  }
+
+  // Method to get database file
+  Future<File> getDatabaseFile() async {
+    final String path = join(await getDatabasesPath(), 'expense_tracker.db');
+    return File(path);
+  }
+
+  // Method to close database
+  Future<void> closeDatabase() async {
+    final db = await database;
+    if (db != null && db.isOpen) {
+      await db.close();
+      _database = null;
+    }
   }
 
   Future<int> insertTransaction(TransModel transaction) async {
@@ -101,8 +152,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> insertField(
-      String fieldType, Map<String, dynamic> fieldData) async {
+  Future<void> insertField(String fieldType, Map<String, dynamic> fieldData) async {
     final db = await database;
     await db!.insert(
       fieldType,
@@ -139,8 +189,19 @@ class DatabaseHelper {
     }
   }
 
-
-
+  Future<void> deleteField(String tableName, String fieldName) async {
+    final db = await database;
+    try {
+      await db?.delete(
+        tableName,
+        where: 'name = ?',
+        whereArgs: [fieldName],
+      );
+    } catch (e) {
+      print('Error deleting field: $e');
+      throw Exception('Failed to delete field: $e');
+    }
+  }
 
   Future<void> deleteDatabase() async {
     String path = join(await getDatabasesPath(), 'expense_manager.db');

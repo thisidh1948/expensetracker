@@ -2,6 +2,7 @@ import 'package:expense_tracker/database/database_helper.dart';
 import 'package:expense_tracker/database/fieldsmodel.dart';
 import 'package:expense_tracker/database/transmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class AddTransactionPage extends StatefulWidget {
@@ -15,183 +16,261 @@ class AddTransactionPage extends StatefulWidget {
 
 class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _descriptionController = TextEditingController();
   late TransModel _transaction;
   List<FieldModel> _accounts = [];
   List<FieldModel> _sections = [];
   List<FieldModel> _categories = [];
   List<FieldModel> _subcategories = [];
+  bool _isLoading = false;
+  String _errorMessage = '';
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    _transaction = widget.transaction ?? TransModel(
-      account: '',
-      section: '',
-      category: '',
-      subCategory: '',
-      amount: 0.0,
-      cd: 'Credit',
-      note: '',
-      date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-    );
-    _loadFields();
+    _initializeTransaction();
+    _loadDropdownData();
   }
 
-  Future<void> _loadFields() async {
-    _accounts = await DatabaseHelper().getFields('Accounts');
-    _sections = await DatabaseHelper().getFields('Sections');
-    _categories = await DatabaseHelper().getFields('Categories');
-    _subcategories = await DatabaseHelper().getFields('Subcategories');
-    setState(() {});
-  }
+  void _initializeTransaction() {
+    _transaction = widget.transaction ??
+        TransModel(
+          account: '',
+          section: '',
+          category: '',
+          subCategory: '',
+          amount: 0.0,
+          cd: '',
+          note: '',
+          date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        );
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      bool isSuccess = widget.transaction == null
-          ? await DatabaseHelper().insertTransaction(_transaction) != null
-          : await DatabaseHelper().updateTransaction(_transaction) != null;
-      _showTransactionStatus(context, isSuccess);
-      if (isSuccess) Navigator.pop(context);
+    if (widget.transaction != null) {
+      _amountController.text = widget.transaction!.amount.toString();
+      _descriptionController.text = widget.transaction!.note!;
+      _selectedDate = DateFormat('yyyy-MM-dd').parse(widget.transaction!.date);
     }
   }
 
-  void _showTransactionStatus(BuildContext context, bool isSuccess) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isSuccess ? 'Transaction saved successfully!' : 'Failed to save transaction.')));
+  Future<void> _loadDropdownData() async {
+    setState(() => _isLoading = true);
+    try {
+      final db = DatabaseHelper();
+      _accounts = await db.getFields('accounts');
+      _sections = await db.getFields('sections');
+      _categories = await db.getFields('categories');
+      _subcategories = await db.getFields('subcategories');
+    } catch (e) {
+      setState(() => _errorMessage = 'Failed to load data: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _transaction.date = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _saveTransaction() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    _formKey.currentState!.save();
+    setState(() => _isLoading = true);
+
+    try {
+      final db = DatabaseHelper();
+      if (widget.transaction == null) {
+        await db.insertTransaction(_transaction);
+      } else {
+        await db.updateTransaction(_transaction);
+      }
+      Navigator.pop(context, true);
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to save transaction: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        appBar: AppBar(title: Text(widget.transaction == null ? 'Add Transaction' : 'Update Transaction')),
-        backgroundColor: Theme.of(context).primaryColor,
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: <Widget>[
-                  _buildDropdownField('Account', Icons.warehouse, _transaction.account, _accounts, (val) => setState(() => _transaction.account = val ?? '')),
-                  _buildDropdownField('Section', Icons.account_circle, _transaction.section, _sections, (val) => setState(() => _transaction.section = val ?? '')),
-                  _buildDropdownField('Category', Icons.category_outlined, _transaction.category, _categories, (val) => setState(() => _transaction.category = val ?? '')),
-                  _buildDropdownField('SubCategory', Icons.subdirectory_arrow_right, _transaction.subCategory, _subcategories, (val) => setState(() => _transaction.subCategory = val ?? '')),
-                  _buildStyledTextField('Amount', Icons.attach_money, (val) => _transaction.amount = double.parse(val!), initialValue: _transaction.amount.toString()),
-                  _buildChoiceChips(),
-                  _buildStyledTextField('Note', Icons.note, (val) => _transaction.note = val),
-                  GestureDetector(
-                    onTap: () async {
-                      DateTime? picked = await showDatePicker(
-                        context: context, initialDate: DateTime.parse(_transaction.date),
-                        firstDate: DateTime(2000), lastDate: DateTime(2101),
-                      );
-                      if (picked != null) setState(() => _transaction.date = DateFormat('yyyy-MM-dd').format(picked));
-                    },
-                    child: AbsorbPointer(
-                      child: _buildStyledTextField('Date', Icons.calendar_today, null, initialValue: _transaction.date),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _submitForm,
-                    child: Text(widget.transaction == null ? 'Add Transaction' : 'Update Transaction'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.transaction == null
+            ? 'Add Transaction'
+            : 'Edit Transaction'),
       ),
-    );
-  }
-
-  Widget _buildStyledTextField(String label, IconData icon, FormFieldSetter<String>? onSaved, {TextInputType keyboardType = TextInputType.text, String? initialValue}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Container(
-        constraints: BoxConstraints(maxHeight: 50),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [BoxShadow(blurRadius: 1, color: Theme.of(context).brightness == Brightness.dark ? Colors.black12 : Colors.grey.shade200, offset: const Offset(5, 5))],
-        ),
-        child: Row(
-          children: [
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: Icon(icon)),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Center(
-                  child: TextFormField(
-                    decoration: InputDecoration(
-                      labelText: label,
-                      labelStyle: TextStyle(color: Theme.of(context).hintColor),
-                      border: InputBorder.none,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .error
+                            .withOpacity(0.1),
+                        child: Text(
+                          _errorMessage,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error),
+                        ),
+                      ),
+                    DropdownButtonFormField<String>(
+                      value: _transaction.account!.isNotEmpty
+                          ? _transaction.account
+                          : null,
+                      decoration: const InputDecoration(labelText: 'Account'),
+                      items: _accounts
+                          .map((account) => DropdownMenuItem(
+                                value: account.name,
+                                child: Text(account.name),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _transaction.account = value!),
+                      validator: (value) =>
+                          value == null ? 'Please select an account' : null,
                     ),
-                    onSaved: onSaved, keyboardType: keyboardType, initialValue: initialValue,
-                    style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
-                  ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _transaction.section.isNotEmpty
+                          ? _transaction.section
+                          : null,
+                      decoration: const InputDecoration(labelText: 'Section'),
+                      items: _sections
+                          .map((section) => DropdownMenuItem(
+                                value: section.name,
+                                child: Text(section.name),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _transaction.section = value!),
+                      validator: (value) =>
+                          value == null ? 'Please select a section' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _transaction.category!.isNotEmpty
+                          ? _transaction.category
+                          : null,
+                      decoration: const InputDecoration(labelText: 'Category'),
+                      items: _categories
+                          .map((category) => DropdownMenuItem(
+                                value: category.name,
+                                child: Text(category.name),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _transaction.category = value!),
+                      validator: (value) =>
+                          value == null ? 'Please select a category' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _transaction.subCategory!.isNotEmpty
+                          ? _transaction.subCategory
+                          : null,
+                      decoration:
+                          const InputDecoration(labelText: 'Subcategory'),
+                      items: _subcategories
+                          .map((subcat) => DropdownMenuItem(
+                                value: subcat.name,
+                                child: Text(subcat.name),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _transaction.subCategory = value!),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _amountController,
+                      decoration: const InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '₹',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Please enter amount' : null,
+                      onSaved: (value) =>
+                          _transaction.amount = double.parse(value!),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          ChoiceChip(
+                            label: const Text('Credit'),
+                            selected: _transaction.cd == 'Credit',
+                            onSelected: (selected) =>
+                                setState(() => _transaction.cd = 'Credit'),
+                          ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            label: const Text('Debit'),
+                            selected: _transaction.cd == 'Debit',
+                            onSelected: (selected) =>
+                                setState(() => _transaction.cd = 'Debit'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text('Transaction Date'),
+                      subtitle:
+                          Text(DateFormat('yyyy-MM-dd').format(_selectedDate)),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () => _selectDate(context),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration:
+                          const InputDecoration(labelText: 'Description'),
+                      maxLines: 3,
+                      onSaved: (value) => _transaction.note = value!,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _saveTransaction,
+                      child: Text(widget.transaction == null
+                          ? 'Add Transaction'
+                          : 'Update Transaction'),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildDropdownField(String label, IconData icon, String? initialValue, List<FieldModel> items, ValueChanged<String?> onChanged) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Container(
-        constraints: BoxConstraints(maxHeight: 50),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [BoxShadow(blurRadius: 1, color: Theme.of(context).brightness == Brightness.dark ? Colors.black12 : Colors.grey.shade200, offset: const Offset(5, 5))],
-        ),
-        child: Row(
-          children: [
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: Icon(icon)),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: initialValue?.isNotEmpty == true ? initialValue : null,
-                  hint: Text('Select $label', style: TextStyle(color: Theme.of(context).hintColor)),
-                  items: items.map((item) => DropdownMenuItem<String>(value: item.name, child: Row(children: [if (item.icon != null) Icon(item.icon, color: Theme.of(context).iconTheme.color), const SizedBox(width: 8), Text(item.name)]))).toList(),
-                  onChanged: onChanged,
-                  underline: Container(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChoiceChips() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          ChoiceChip(
-            label: const Text('Credit'),
-            selected: _transaction.cd == 'Credit',
-            onSelected: (selected) => setState(() => _transaction.cd = 'Credit'),
-          ),
-          const SizedBox(width: 8),
-          ChoiceChip(
-            label: const Text('Debit'),
-            selected: _transaction.cd == 'Debit',
-            onSelected: (selected) => setState(() => _transaction.cd = 'Debit'),
-          ),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 }

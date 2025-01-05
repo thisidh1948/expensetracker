@@ -1,8 +1,20 @@
-allprojects {
+buildscript {
+    ext {
+        compileSdkVersion = 35 // Specify the compile SDK version here
+        minSdkVersion = 25 // Specify the minimum SDK version here
+        targetSdkVersion = 35 // Specify the target SDK version here // Add any other necessary version codes
+        }
     repositories {
         google()
-        mavenCentral()
-    }
+        mavenCentral() }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.0.4'
+        classpath 'com.google.gms:google-services:4.4.2'
+        // Google services Gradle plugin
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+        }
 }
 
 rootProject.buildDir = "../build"
@@ -16,3 +28,4 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
+

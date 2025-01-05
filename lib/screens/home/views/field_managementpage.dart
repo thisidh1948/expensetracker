@@ -1,5 +1,6 @@
 import 'package:expense_tracker/database/database_helper.dart';
 import 'package:expense_tracker/database/fieldsmodel.dart';
+import 'package:expense_tracker/icons/bank_icons.dart';
 import 'package:flutter/material.dart';
 
 class FieldManagementPage extends StatefulWidget {
@@ -39,7 +40,7 @@ class _FieldManagementPageState extends State<FieldManagementPage> {
     }
   }
 
-    Future<void> _deleteDb() async {
+  Future<void> _deleteDb() async {
     await DatabaseHelper().deleteDatabase();
   }
 
@@ -95,12 +96,24 @@ class _FieldManagementPageState extends State<FieldManagementPage> {
                   return ListTile(
                     leading: Icon(_fields[index].icon),
                     title: Text(_fields[index].name),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () async {
+                        await DatabaseHelper().deleteField(
+                          widget.fieldType,
+                          _fields[index].name,
+                        );
+                        _loadFields();
+                      },
+                    ),
                   );
                 },
               ),
             ),
-            Expanded(child: ElevatedButton(onPressed: _deleteDb, child: Text('Delete DBs'))
-              ),
+            ElevatedButton(
+              onPressed: _deleteDb,
+              child: const Text('Delete DBs'),
+            ),
           ],
         ),
       ),
@@ -108,7 +121,7 @@ class _FieldManagementPageState extends State<FieldManagementPage> {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: _addField,
-          child: Text('Add Fields'),
+          child: const Text('Add Field'),
         ),
       ),
     );
@@ -116,30 +129,50 @@ class _FieldManagementPageState extends State<FieldManagementPage> {
 }
 
 class IconPickerDialog extends StatelessWidget {
+  IconPickerDialog({super.key});
+
   final List<IconData> icons = [
     Icons.label,
     Icons.account_balance_wallet,
     Icons.credit_card,
     Icons.shopping_cart,
     Icons.home,
-    Icons.attach_money
-    // Add more icons as needed
+    Icons.attach_money,
+    Icons.fastfood,
+    Icons.local_hospital,
+    Icons.directions_car,
+    Icons.school,
+    Icons.local_movies,
+    Icons.flight,
+    Icons.sports,
+    Icons.pets,
+    Icons.shopping_bag,
+    Icons.restaurant,
+    BankIcons.axis_bank,
   ];
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-        itemCount: icons.length,
-        itemBuilder: (context, index) {
-          return IconButton(
-            icon: Icon(icons[index]),
-            onPressed: () {
-              Navigator.pop(context, icons[index]);
-            },
-          );
-        },
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: GridView.builder(
+          shrinkWrap: true,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: icons.length,
+          itemBuilder: (context, index) {
+            return IconButton(
+              icon: Icon(icons[index]),
+              onPressed: () {
+                Navigator.of(context).pop(icons[index]);
+              },
+            );
+          },
+        ),
       ),
     );
   }

@@ -88,7 +88,7 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
                     ),
                     SizedBox(height: 8.0),
                     Text(
-                      'Balance: ₹${account.balance}', // Display the balance
+                      '₹${account.balance}', // Display the balance
                       style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(context).textTheme.bodyMedium?.color,

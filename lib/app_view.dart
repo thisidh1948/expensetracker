@@ -3,10 +3,6 @@ import 'package:expense_tracker/screens/themes/themeprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-void main() {
-  runApp(MyAppView());
-}
-
 class MyAppView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
