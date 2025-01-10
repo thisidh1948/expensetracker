@@ -7,11 +7,12 @@ import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sig
 import 'package:sqflite/sqflite.dart';
 import 'package:archive/archive.dart';
 import '../database/database_helper.dart';
-import '../models/backup_metadata.dart';
+import '../database/models/backup_metadata.dart';
+
 
 class BackupService {
   final GoogleSignIn _googleSignIn;
-  final DatabaseHelper _databaseHelper;
+  final TransactioRepositry _databaseHelper;
   static const String backupFolderName = 'ExpenseTrackerBackups';
 
   BackupService({GoogleSignIn? googleSignIn})
@@ -23,7 +24,7 @@ class BackupService {
                 'https://www.googleapis.com/auth/drive.appdata',
               ],
             ),
-        _databaseHelper = DatabaseHelper();
+        _databaseHelper = TransactioRepositry();
 
   Future<String> createBackup() async {
     Database? db;

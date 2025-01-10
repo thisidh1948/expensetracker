@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'authprovider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../homescreen/home_screen.dart';
+import '../home_screen.dart';
 
 class SignInPage extends StatefulWidget {
   @override

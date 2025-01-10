@@ -1,6 +1,6 @@
 import 'package:expense_tracker/screens/auth/authprovider.dart';
 import 'package:expense_tracker/screens/auth/signinpage.dart';
-import 'package:expense_tracker/screens/homescreen/home_screen.dart';
+import 'package:expense_tracker/screens/home_screen.dart';
 import 'package:expense_tracker/screens/themes/themeprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

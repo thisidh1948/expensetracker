@@ -1,6 +1,7 @@
+import 'package:expense_tracker/database/transactions_crud.dart';
+import 'package:expense_tracker/database/models/dbtransaction.dart';
+import 'package:expense_tracker/database/models/summary.dart';
 import 'package:flutter/material.dart';
-import 'package:expense_tracker/database/database_helper.dart';
-import 'package:expense_tracker/database/transmodel.dart';
 
 class StatScreen extends StatefulWidget {
   const StatScreen({super.key});
@@ -10,8 +11,10 @@ class StatScreen extends StatefulWidget {
 }
 
 class _StatScreenState extends State<StatScreen> {
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
-  List<TransModel> _transactions = [];
+  final TransactionCRUD _transactionRepository = TransactionCRUD();
+
+  Summary _summary = Summary(credit: 0.0, debit: 0.0);
+  List<DbTransaction> _transactions = [];
 
   @override
   void initState() {
@@ -20,29 +23,19 @@ class _StatScreenState extends State<StatScreen> {
   }
 
   Future<void> _loadTransactions() async {
-    final transactions = await _databaseHelper.getTransactions();
+    final transactions = await _transactionRepository.getAllTransactions();
+    final Summary summary = await _transactionRepository.getAllDataSummary();
     setState(() {
       _transactions = transactions;
+      _summary =  summary;
     });
-  }
-
-  double _calculateTotalExpenses() {
-    return _transactions
-        .where((t) => t.cd == 'Debit')
-        .fold(0, (sum, t) => sum + t.amount);
-  }
-
-  double _calculateTotalIncome() {
-    return _transactions
-        .where((t) => t.cd == 'Credit')
-        .fold(0, (sum, t) => sum + t.amount);
   }
 
   @override
   Widget build(BuildContext context) {
-    final totalExpenses = _calculateTotalExpenses();
-    final totalIncome = _calculateTotalIncome();
-    final balance = totalIncome - totalExpenses;
+    final totalExpenses = _summary.debit;
+    final totalIncome = _summary.credit;
+    final balance = _summary.balance;
 
     return Scaffold(
       appBar: AppBar(

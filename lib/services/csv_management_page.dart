@@ -1,10 +1,8 @@
-// lib/screens/csv_management_page.dart
 import 'package:flutter/material.dart';
-import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:sqflite/sqflite.dart';
 import 'dart:io';
-import '../database/database_helper.dart';
+import '../database/transactions_crud.dart';
+import 'csv_service.dart';
 
 class CSVManagementPage extends StatefulWidget {
   const CSVManagementPage({Key? key}) : super(key: key);
@@ -14,46 +12,35 @@ class CSVManagementPage extends StatefulWidget {
 }
 
 class _CSVManagementPageState extends State<CSVManagementPage> {
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  final CSVService _csvService = CSVService();
+  final TransactionCRUD _repository = TransactionCRUD();
   bool _isLoading = false;
 
-  Future<void> _exportToCSV() async {
+// In _CSVManagementPageState class, update the _exportCSV method:
+
+  Future<void> _exportCSV() async {
     setState(() => _isLoading = true);
     try {
-      // Get data from database
-      final db = await _databaseHelper.database;
-      final List<Map<String, dynamic>> data = await db!.query('Alldata');
+      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      if (selectedDirectory == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
-      if (data.isEmpty) {
+      final transactions = await _repository.getAllTransactions();
+      if (transactions.isEmpty) {
         _showMessage('No data to export', isError: true);
         return;
       }
 
-      // Convert data to CSV
-      List<List<dynamic>> csvData = [];
+      final csvContent = _csvService.exportToCSV(transactions);
 
-      // Add headers
-      csvData.add(data.first.keys.toList());
+      final timestamp =
+          DateTime.now().toString().replaceAll(RegExp(r'[^0-9]'), '');
+      final filePath = '$selectedDirectory/expense_data_$timestamp.csv';
 
-      // Add rows
-      for (var row in data) {
-        csvData.add(row.values.toList());
-      }
-
-      String csv = const ListToCsvConverter().convert(csvData);
-
-      // Get save location
-      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
-
-      if (selectedDirectory == null) return;
-
-      // Create file name with timestamp
-      final String timestamp = DateTime.now().toString().replaceAll(RegExp(r'[^0-9]'), '');
-      final String filePath = '$selectedDirectory/expense_data_$timestamp.csv';
-
-      // Write CSV file
-      final File file = File(filePath);
-      await file.writeAsString(csv);
+      final file = File(filePath);
+      await file.writeAsString(csvContent);
 
       _showMessage('Data exported successfully to: $filePath');
     } catch (e) {
@@ -64,81 +51,31 @@ class _CSVManagementPageState extends State<CSVManagementPage> {
   }
 
   Future<void> _importCSV() async {
-    setState(() => _isLoading = true);
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
       );
 
-      if (result == null) {
-        _showMessage('No file selected', isError: true);
-        return;
-      }
+      if (result == null) return;
+
+      setState(() => _isLoading = true);
 
       final file = File(result.files.single.path!);
-      final contents = await file.readAsString();
-      final rows = const CsvToListConverter().convert(contents);
+      final csvContent = await file.readAsString();
 
-      if (rows.isEmpty) {
-        _showMessage('File is empty', isError: true);
-        return;
+      final importResult = await _csvService.importFromCSV(csvContent);
+
+      if (importResult.errors.isEmpty) {
+        _showMessage(
+            'Successfully imported ${importResult.successCount} records');
+      } else {
+        _showErrorDialog(
+          'Import Results',
+          'Imported ${importResult.successCount} records with ${importResult.failureCount} failures',
+          importResult.errors,
+        );
       }
-
-      // Validate and process data
-      final headers = rows[0].map((e) => e.toString().toLowerCase()).toList();
-      final requiredHeaders = [
-        'account', 'section', 'category', 'subcategory',
-        'amount', 'cd', 'note', 'date', 'quantity', 'price', 'tax'
-      ];
-
-      for (final header in requiredHeaders) {
-        if (!headers.contains(header)) {
-          _showMessage('Missing required column: $header', isError: true);
-          return;
-        }
-      }
-
-      // Process rows
-      final db = await _databaseHelper.database;
-      int processedRows = 0;
-
-      await db?.transaction((txn) async {
-        for (int i = 1; i < rows.length; i++) {
-          try {
-            final row = rows[i];
-            if (row.length != headers.length) continue;
-
-            final Map<String, dynamic> rowMap = {};
-            for (int j = 0; j < headers.length; j++) {
-              rowMap[headers[j]] = row[j];
-            }
-
-            await txn.insert(
-              'Alldata',
-              {
-                'account': rowMap['account'] ?? '',
-                'section': rowMap['section'] ?? '',
-                'category': rowMap['category'] ?? '',
-                'subCategory': rowMap['subcategory'] ?? '',
-                'amount': double.tryParse(rowMap['amount'].toString()) ?? 0.0,
-                'cd': rowMap['cd'] ?? '',
-                'note': rowMap['note'] ?? '',
-                'date': rowMap['date'] ?? '',
-                'quantity': rowMap['quantity']?.toString() ?? '',
-                'price': rowMap['price']?.toString() ?? '',
-                'tax': rowMap['tax']?.toString() ?? '',
-              },
-              conflictAlgorithm: ConflictAlgorithm.replace,
-            );
-            processedRows++;
-          } catch (e) {
-            print('Error processing row $i: $e');
-          }
-        }
-      });
-
-      _showMessage('Successfully imported $processedRows records');
     } catch (e) {
       _showMessage('Import failed: ${e.toString()}', isError: true);
     } finally {
@@ -152,6 +89,39 @@ class _CSVManagementPageState extends State<CSVManagementPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
+  void _showErrorDialog(String title, String summary, List<String> errors) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(summary),
+              if (errors.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Errors:'),
+                const SizedBox(height: 8),
+                ...errors.map((error) => Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 4),
+                      child: Text('• $error'),
+                    )),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
@@ -188,7 +158,7 @@ class _CSVManagementPageState extends State<CSVManagementPage> {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _exportToCSV,
+                          onPressed: _isLoading ? null : _exportCSV,
                           icon: const Icon(Icons.file_download),
                           label: const Text('Export to CSV'),
                         ),
@@ -212,7 +182,12 @@ class _CSVManagementPageState extends State<CSVManagementPage> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Import expense data from a CSV file. Make sure the file has the correct format with all required columns.',
+                          'Import expense data from a CSV file. Required columns: bank, category, subcategory, cd (Credit/Debit), amount.',
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Optional columns: section, item, units, ppu (price per unit), tax.',
+                          style: TextStyle(fontStyle: FontStyle.italic),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(

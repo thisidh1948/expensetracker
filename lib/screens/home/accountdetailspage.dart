@@ -1,5 +1,5 @@
-import 'package:expense_tracker/database/database_helper.dart';
-import 'package:expense_tracker/database/transmodel.dart';
+import 'package:expense_tracker/database/transactions_crud.dart';
+import 'package:expense_tracker/database/models/dbtransaction.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -16,7 +16,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
   double _totalBalance = 0.0;
   double _totalCredit = 0.0;
   double _totalDebit = 0.0;
-  List<TransModel> _transactions = [];
+  List<DbTransaction> _transactions = [];
   DateTimeRange? _selectedDateRange;
   bool _isLoading = true;
   final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
@@ -34,16 +34,15 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
   Future<void> _loadTransactions() async {
     setState(() => _isLoading = true);
     try {
-      List<TransModel> transactions = await DatabaseHelper().getTransactions();
-      List<TransModel> accountTransactions = transactions
+      List<DbTransaction> transactions = await TransactionCRUD().getAllTransactions();
+      List<DbTransaction> accountTransactions = transactions
           .where((transaction) => transaction.account == widget.account)
           .toList();
 
       if (_selectedDateRange != null) {
         accountTransactions = accountTransactions.where((transaction) {
-          final transactionDate =
-              DateFormat('yyyy-MM-dd').parse(transaction.date);
-          return transactionDate.isAfter(_selectedDateRange!.start
+          final transactionDate = transaction.date;
+          return transactionDate!.isAfter(_selectedDateRange!.start
                   .subtract(const Duration(days: 1))) &&
               transactionDate.isBefore(
                   _selectedDateRange!.end.add(const Duration(days: 1)));
@@ -55,7 +54,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
       double totalDebit = 0.0;
 
       for (var transaction in accountTransactions) {
-        if (transaction.cd == 'Credit') {
+        if (transaction.cd) {
           totalBalance += transaction.amount;
           totalCredit += transaction.amount;
         } else {
@@ -225,14 +224,14 @@ Future<void> _selectDateRange() async {
                       return Card(
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: transaction.cd == 'Credit'
+                            backgroundColor: transaction.cd == true
                                 ? Colors.green.withOpacity(0.2)
                                 : Colors.red.withOpacity(0.2),
                             child: Icon(
-                              transaction.cd == 'Credit'
+                              transaction.cd == true
                                   ? Icons.add
                                   : Icons.remove,
-                              color: transaction.cd == 'Credit'
+                              color: transaction.cd == true
                                   ? Colors.green
                                   : Colors.red,
                             ),
@@ -242,12 +241,12 @@ Future<void> _selectDateRange() async {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
-                            '${transaction.section} - ${DateFormat('MMM d, y').format(DateFormat('yyyy-MM-dd').parse(transaction.date))}',
+                            '${transaction.section} - ${transaction.date}',
                           ),
                           trailing: Text(
                             _currencyFormat.format(transaction.amount),
                             style: TextStyle(
-                              color: transaction.cd == 'Credit'
+                              color: transaction.cd == true
                                   ? Colors.green
                                   : Colors.red,
                               fontWeight: FontWeight.bold,

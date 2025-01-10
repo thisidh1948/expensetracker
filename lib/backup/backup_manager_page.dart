@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/backup_metadata.dart';
 import 'package:intl/intl.dart';
-
+import '../database/models/backup_metadata.dart';
 import 'backup_service.dart';
 
 class BackupManagerPage extends StatefulWidget {
@@ -23,7 +22,7 @@ class _BackupManagerPageState extends State<BackupManagerPage> {
     _loadBackups();
   }
 
-Future<void> _loadBackups() async {
+  Future<void> _loadBackups() async {
     if (_isLoading) return;
 
     setState(() {
@@ -36,21 +35,21 @@ Future<void> _loadBackups() async {
       if (mounted) {
         setState(() {
           _backups = backups;
-          _isLoading = false;  // Reset loading state
+          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _error = e.toString();
-          _isLoading = false;  // Reset loading state
+          _isLoading = false;
         });
         _showError('Failed to load backups: $e');
       }
     }
   }
 
- Future<void> _createBackup() async {
+  Future<void> _createBackup() async {
     if (_isLoading) return;
 
     setState(() {
@@ -62,22 +61,70 @@ Future<void> _loadBackups() async {
       await _backupService.createBackup();
       if (mounted) {
         setState(() {
-          _isLoading = false;  // Reset loading state
+          _isLoading = false;
         });
-        await _loadBackups();  // Reload the backup list
+        await _loadBackups();
         _showSuccess('Backup created successfully');
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _error = e.toString();
-          _isLoading = false;  // Reset loading state
+          _isLoading = false;
         });
         _showError('Failed to create backup: $e');
       }
     }
   }
 
+  Future<void> _restoreBackup(BackupMetadata backup) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Restore'),
+        content: const Text(
+          'This will replace all current data with the backup data. '
+          'This action cannot be undone. Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('RESTORE'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await _backupService.restoreBackup(backup.id);
+      if (mounted) {
+        _showSuccess('Backup restored successfully');
+        Navigator.pop(context, true); // Return true to indicate successful restore
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+        _showError('Failed to restore backup: $e');
+      }
+    }
+  }
 
   void _showError(String message) {
     if (!mounted) return;
@@ -112,6 +159,36 @@ Future<void> _loadBackups() async {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.backup_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No backups found',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the button below to create your first backup',
+            style: TextStyle(
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -155,41 +232,41 @@ Future<void> _loadBackups() async {
                     child: _backups.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
-                      itemCount: _backups.length,
-                      padding: const EdgeInsets.all(8),
-                      itemBuilder: (context, index) {
-                        final backup = _backups[index];
-                        return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.symmetric(
-                            vertical: 4,
-                            horizontal: 8,
+                            itemCount: _backups.length,
+                            padding: const EdgeInsets.all(8),
+                            itemBuilder: (context, index) {
+                              final backup = _backups[index];
+                              return Card(
+                                elevation: 2,
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                  horizontal: 8,
+                                ),
+                                child: ListTile(
+                                  leading: const CircleAvatar(
+                                    child: Icon(Icons.backup),
+                                  ),
+                                  title: Text(
+                                    DateFormat('MMM dd, yyyy HH:mm')
+                                        .format(backup.createdAt),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Size: ${_formatFileSize(backup.sizeBytes)}',
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.restore),
+                                    tooltip: 'Restore this backup',
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => _restoreBackup(backup),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          child: ListTile(
-                            leading: const CircleAvatar(
-                              child: Icon(Icons.backup),
-                            ),
-                            title: Text(
-                              DateFormat('MMM dd, yyyy HH:mm')
-                                  .format(backup.createdAt),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(
-                              'Size: ${_formatFileSize(backup.sizeBytes)}',
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.restore),
-                              tooltip: 'Restore this backup',
-                              onPressed: _isLoading
-                                  ? null
-                                  : () => _restoreBackup(backup),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
                   ),
                 ),
               ],
@@ -205,92 +282,12 @@ Future<void> _loadBackups() async {
         ),
         floatingActionButton: !_isLoading
             ? FloatingActionButton.extended(
-          onPressed: _createBackup,
-          icon: const Icon(Icons.backup),
-          label: const Text('Create Backup'),
-        )
+                onPressed: _createBackup,
+                icon: const Icon(Icons.backup),
+                label: const Text('Create Backup'),
+              )
             : null,
       ),
     );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.backup_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No backups found',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap the button below to create your first backup',
-            style: TextStyle(
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _restoreBackup(BackupMetadata backup) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Restore'),
-        content: const Text(
-          'This will replace all current data with the backup data. '
-              'This action cannot be undone. Are you sure?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('RESTORE'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      await _backupService.restoreBackup(backup.id);
-      if (mounted) {
-        _showSuccess('Backup restored successfully');
-        // Optional: Navigate back or restart app
-        // Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
-        _showError('Failed to restore backup: $e');
-      }
-    }
   }
 }

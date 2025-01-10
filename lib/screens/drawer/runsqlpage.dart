@@ -19,7 +19,7 @@ class _RunSQLPageState extends State<RunSQLPage> {
       _results = [];
     });
 
-    final db = await DatabaseHelper().database;
+    final db = await TransactioRepositry().database;
     try {
       var results = await db?.rawQuery(_sqlController.text);
       setState(() {

@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:expense_tracker/screens/drawer/customdrawer.dart';
-import 'package:expense_tracker/screens/home/stats/stats.dart';
-import 'package:expense_tracker/screens/homescreen/add_transaction.dart';
-import 'package:expense_tracker/screens/home/views/main_screen.dart';
-import 'package:expense_tracker/screens/homescreen/customappbar.dart';
+import 'package:expense_tracker/screens/stats/stats.dart';
+import 'package:expense_tracker/screens/addtransaction/add_transaction.dart';
+import 'package:expense_tracker/screens/main_screen.dart';
+import 'package:expense_tracker/screens/home/customappbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -53,11 +53,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ]),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+            MaterialPageRoute(builder: (context) =>  AddTransactionPage(),
+            fullscreenDialog: true),
           );
+          if (result == true) {
+            setState(() {
+              index = 0;
+            });
+          }
         },
         shape: const CircleBorder(),
         child: Container(

@@ -1,36 +1,37 @@
 import 'package:expense_tracker/screens/drawer/runsqlpage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:expense_tracker/screens/home/views/field_managementpage.dart';
 import 'package:expense_tracker/screens/themes/theme.dart';
 import '../../backup/backup_manager_page.dart';
 import '../../services/csv_management_page.dart';
+import '../structure/managetransaction_skeleton.dart';
 import '../themes/themeprovider.dart';
 
 Drawer customDrawer(BuildContext context) {
   return Drawer(
     child: Column(
       children: [
-        DrawerHeader(
+        const DrawerHeader(
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: Colors.blue,
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const Text(
-                'Manage Fields',
+              Text(
+                'Expense Tracker',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Manage your expenses',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -40,30 +41,6 @@ Drawer customDrawer(BuildContext context) {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-              _buildDrawerItem(
-                context: context,
-                icon: Icons.account_balance,
-                title: 'Accounts',
-                fieldType: 'Accounts',
-              ),
-              _buildDrawerItem(
-                context: context,
-                icon: Icons.category,
-                title: 'Sections',
-                fieldType: 'Sections',
-              ),
-              _buildDrawerItem(
-                context: context,
-                icon: Icons.folder,
-                title: 'Categories',
-                fieldType: 'Categories',
-              ),
-              _buildDrawerItem(
-                context: context,
-                icon: Icons.folder_open,
-                title: 'Subcategories',
-                fieldType: 'Subcategories',
-              ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.code),
@@ -129,6 +106,22 @@ Drawer customDrawer(BuildContext context) {
                   );
                 },
               ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.architecture),
+                title: const Text(
+                  'Skeleton',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ManageTransactionSkeleton(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -147,29 +140,3 @@ Drawer customDrawer(BuildContext context) {
     ),
   );
 }
-
-Widget _buildDrawerItem({
-  required BuildContext context,
-  required IconData icon,
-  required String title,
-  required String fieldType,
-}) {
-  return ListTile(
-    leading: Icon(icon),
-    title: Text(
-      title,
-      style: const TextStyle(fontWeight: FontWeight.w500),
-    ),
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FieldManagementPage(
-            fieldType: fieldType,
-          ),
-        ),
-      );
-    },
-  );
-}
-
