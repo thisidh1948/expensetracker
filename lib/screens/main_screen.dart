@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import '../database/models/monthlydata_chart.dart';
 import '../database/models/summary.dart';
 import '../database/transactions_crud.dart';
-import 'addtransaction/add_transaction.dart';
 import 'home/monthly_bar_chart.dart';
 import 'home/scrollable_accounts.dart';
-import 'home/transactionlist.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final GlobalKey<ScaffoldState>? scaffoldKey;
+
+  const MainScreen({
+    Key? key,
+    this.scaffoldKey,
+  }) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -18,7 +21,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final _transactionCRUD = TransactionCRUD();
-
   double _totalBalance = 0.0;
   bool _isLoading = false;
   List<MonthlyData> _monthlyData = [];
@@ -100,15 +102,14 @@ class _MainScreenState extends State<MainScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    const SizedBox(height: 16),
+                    _buildThreeDotButton(),
                     _buildBalanceCard(),
                     const SizedBox(height: 8),
                     _buildAccountsSection(),
                     const SizedBox(height: 8),
                     _buildChartSection(),
                     const SizedBox(height: 8),
-                    _buildTransactionsHeader(),
-                    const SizedBox(height: 8),
-                    _buildTransactionsList(),
                   ]),
                 ),
               ),
@@ -118,8 +119,19 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+  Widget _buildThreeDotButton() {
+    return Align(
+      alignment: Alignment.topRight,
+      child: IconButton(
+        icon: const Icon(Icons.more_vert),
+        onPressed: () {
+          widget.scaffoldKey?.currentState?.openDrawer();
+        },
+      ),
+    );}
 
-  Widget _buildBalanceCard() {
+
+    Widget _buildBalanceCard() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -172,29 +184,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTransactionsHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          "Recent Transactions",
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: _isLoading ? null : _refreshData,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransactionsList() {
-    return SizedBox(
-      height: 400,
-      child: TransactionListPage(),
     );
   }
 

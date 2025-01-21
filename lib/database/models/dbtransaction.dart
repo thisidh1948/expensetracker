@@ -1,5 +1,5 @@
 class DbTransaction {
-  final int? id;
+  late final int? id;
   final String account;
   final String? section;
   final String category;
@@ -95,5 +95,10 @@ class DbTransaction {
         amount: amount ?? this.amount,
         date: date ?? this.date,
         note: note ?? this.note);
+  }
+
+  @override
+  String toString() {
+    return 'DbTransaction{id: $id, account: $account, section: $section, category: $category, subcategory: $subcategory, item: $item, cd: $cd, units: $units, ppu: $ppu, tax: $tax, amount: $amount, date: $date, note: $note}';
   }
 }

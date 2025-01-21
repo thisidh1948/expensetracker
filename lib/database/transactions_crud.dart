@@ -8,13 +8,12 @@ import 'models/summary.dart';
 import 'models/summary_with_transactions.dart';
 
 class TransactionCRUD {
-  final TransactioRepositry _databaseHelper;
+  final DatabaseHelper _databaseHelper;
 
-  TransactionCRUD({TransactioRepositry? databaseHelper})
-      : _databaseHelper = databaseHelper ?? TransactioRepositry();
+  TransactionCRUD({DatabaseHelper? databaseHelper})
+      : _databaseHelper = databaseHelper ?? DatabaseHelper();
 
   Future<void> insert(DbTransaction transaction) async {
-    print('Saving transaction with cd value: {}' + transaction.cd.toString());
     final db = await _databaseHelper.database;
     await db!.insert(
       'Alldata',
@@ -70,7 +69,8 @@ class TransactionCRUD {
     dynamic columnValue,
     DateTime? startDate,
     DateTime? endDate,
-  }) async {
+  }) async
+  {
     final db = await _databaseHelper.database;
 
     final List<String> whereConditions = [];
@@ -169,29 +169,51 @@ class TransactionCRUD {
   }
 
   Future<List<MonthlyData>> getMonthlyTransactions() async {
-    final db = await _databaseHelper.database;
+  final db = await _databaseHelper.database;
 
-    final List<Map<String, dynamic>> result = await db!.rawQuery('''
-      SELECT 
-        strftime('%Y-%m', date) as month,
-        COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as credits,
-        COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as debits
-      FROM Alldata 
-      GROUP BY month
-      ORDER BY month DESC
-    ''');
+  final List<Map<String, dynamic>> result = await db!.rawQuery('''
+    WITH RECURSIVE dates(date) AS (
+      SELECT date('now', 'start of month', '-5 months')
+      UNION ALL
+      SELECT date(date, '+1 month')
+      FROM dates
+      WHERE date < date('now', 'start of month')
+    )
+    SELECT 
+      strftime('%Y-%m', dates.date) as month,
+      COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as credits,
+      COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as debits
+    FROM dates
+    LEFT JOIN Alldata ON strftime('%Y-%m', Alldata.date) = strftime('%Y-%m', dates.date)
+    GROUP BY month
+    ORDER BY month ASC
+    LIMIT 6
+  ''');
 
-    return List.generate(result.length, (i) {
-      final String month = result[i]['month'];
-      final double totalCredit = result[i]['credits']?.toDouble() ?? 0.0;
-      final double totalDebit = result[i]['debits']?.toDouble() ?? 0.0;
+  return List.generate(result.length, (i) {
+    final String month = result[i]['month'];
+    final double totalCredit = result[i]['credits']?.toDouble() ?? 0.0;
+    final double totalDebit = result[i]['debits']?.toDouble() ?? 0.0;
 
-      return MonthlyData(
-        month: month,
-        income: totalCredit,
-        expense: totalDebit,
-      );
-    });
+    return MonthlyData(
+      month: month, // Using the previously created method
+      income: totalCredit,
+      expense: totalDebit,
+    );
+  });
+}
+
+ Future<List<DbTransaction>> getTransactionsByDateRange(DateTime startDate, DateTime endDate) async {
+  final db = await _databaseHelper.database;
+
+  final List<Map<String, dynamic>> maps = await db!.query(
+    'Alldata',
+    where: 'date BETWEEN ? AND ?',
+    whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
+  );
+
+  return List.generate(maps.length, (i) => DbTransaction.fromMap(maps[i]));
   }
+
 
 }

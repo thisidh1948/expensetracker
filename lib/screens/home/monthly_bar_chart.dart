@@ -24,23 +24,44 @@ class MonthlyBarChart extends StatelessWidget {
     }
   }
 
-  double get _maxY {
-    if (monthlyData.isEmpty) return 1000;
-    double maxIncome = monthlyData
+  double _getMaxValue() {
+    final maxIncome = monthlyData
         .map((data) => data.income)
         .reduce((max, value) => max > value ? max : value);
-    double maxExpense = monthlyData
+    final maxExpense = monthlyData
         .map((data) => data.expense)
         .reduce((max, value) => max > value ? max : value);
     return (maxIncome > maxExpense ? maxIncome : maxExpense) * 1.2;
   }
 
-  String _getMonthName(int index) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return months[index % 12];
+  String _getMonthYear(String date) {
+    try {
+      List<String> parts = date.split('-');
+      String year = parts[0];
+      String month = _getMonthName(int.parse(parts[1]));
+      String shortYear = year.substring(2);
+      return '$month$shortYear';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  String _getMonthName(int month) {
+    switch (month) {
+      case 1: return 'jan';
+      case 2: return 'feb';
+      case 3: return 'mar';
+      case 4: return 'apr';
+      case 5: return 'may';
+      case 6: return 'jun';
+      case 7: return 'jul';
+      case 8: return 'aug';
+      case 9: return 'sep';
+      case 10: return 'oct';
+      case 11: return 'nov';
+      case 12: return 'dec';
+      default: return '';
+    }
   }
 
   List<BarChartGroupData> _createBarGroups() {
@@ -66,7 +87,7 @@ class MonthlyBarChart extends StatelessWidget {
             ],
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
-              toY: _maxY,
+              toY: _getMaxValue(),
               color: Colors.green.withOpacity(0.1),
             ),
           ),
@@ -84,12 +105,11 @@ class MonthlyBarChart extends StatelessWidget {
             ],
             backDrawRodData: BackgroundBarChartRodData(
               show: true,
-              toY: _maxY,
+              toY: _getMaxValue(),
               color: Colors.red.withOpacity(0.1),
             ),
           ),
         ],
-        showingTooltipIndicators: [0, 1],
       );
     });
   }
@@ -111,7 +131,7 @@ class MonthlyBarChart extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: Text(
             'Monthly Overview',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
         Expanded(
@@ -119,13 +139,13 @@ class MonthlyBarChart extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: BarChart(
               BarChartData(
-                maxY: _maxY,
+                maxY: _getMaxValue(),
                 minY: 0,
                 barGroups: _createBarGroups(),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: _maxY / 5,
+                  horizontalInterval: _getMaxValue() / 5,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: Colors.grey.withOpacity(0.2),
@@ -166,10 +186,11 @@ class MonthlyBarChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
+                        String monthYear = monthlyData[value.toInt()].month;
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            _getMonthName(value.toInt()),
+                            _getMonthYear(monthYear),
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -213,17 +234,6 @@ class MonthlyBarChart extends StatelessWidget {
               ),
               swapAnimationDuration: const Duration(milliseconds: 250),
             ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem('Income', Colors.green.shade400),
-              const SizedBox(width: 16),
-              _buildLegendItem('Expense', Colors.red.shade400),
-            ],
           ),
         ),
       ],

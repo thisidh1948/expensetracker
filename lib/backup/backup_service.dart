@@ -12,7 +12,7 @@ import '../database/models/backup_metadata.dart';
 
 class BackupService {
   final GoogleSignIn _googleSignIn;
-  final TransactioRepositry _databaseHelper;
+  final DatabaseHelper _databaseHelper;
   static const String backupFolderName = 'ExpenseTrackerBackups';
 
   BackupService({GoogleSignIn? googleSignIn})
@@ -24,7 +24,7 @@ class BackupService {
                 'https://www.googleapis.com/auth/drive.appdata',
               ],
             ),
-        _databaseHelper = TransactioRepositry();
+        _databaseHelper = DatabaseHelper();
 
   Future<String> createBackup() async {
     Database? db;

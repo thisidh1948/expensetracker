@@ -1,15 +1,11 @@
 // lib/screens/home/views/scrollable_accounts.dart
 
 import 'package:flutter/material.dart';
-import 'package:expense_tracker/database/database_helper.dart';
 import 'package:expense_tracker/database/structures_crud.dart';
 import 'package:expense_tracker/database/transactions_crud.dart';
 import 'package:expense_tracker/database/models/account_model.dart';
 import 'package:expense_tracker/database/models/struct_model.dart';
-
 import 'accountdetailspage.dart';
-
-
 
 class ScrollableAccountsView extends StatefulWidget {
   const ScrollableAccountsView({Key? key}) : super(key: key);
@@ -33,16 +29,19 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
     setState(() => _isLoading = true);
 
     try {
-      final db = await TransactioRepositry().database;
-      final List<StructModel> fields = await StructuresCRUD().getAllTableData('Accounts');
+      final List<StructModel> fields =
+          await StructuresCRUD().getAllTableData('Accounts');
 
       List<AccountModel> accountModels = [];
 
       for (var field in fields) {
-        double balance = await TransactionCRUD()
-            .getAccountBalance(field.name);
+        double balance = await TransactionCRUD().getAccountBalance(field.name);
 
-        accountModels.add(AccountModel(name: field.name, icon: field.icon, balance: balance));
+        accountModels.add(AccountModel(
+            name: field.name,
+            icon: field.icon,
+            balance: balance,
+            color: field.color));
       }
 
       setState(() {
@@ -100,39 +99,52 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AccountDetailsPage(account: account.name),
+                    builder: (context) =>
+                        AccountDetailsPage(account: account.name),
                   ),
                 ).then((_) => _loadAccounts());
               },
               child: Card(
                 elevation: isSelected ? 8 : 2,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (account.icon != null) ...[
-                        Text(
-                          account.icon!,
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      Text(
-                        account.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (account.icon != null) ...[
+                            Icon(
+                              IconData(
+                                int.parse(account.icon!),
+                                fontFamily: 'MaterialIcons',
+                              ),
+                              size: 16, // Small icon size
+                              color: account.color != null
+                                  ? Color(int.parse(
+                                      account.color!.replaceFirst('#', '0xFF')))
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            account.name,
+                            style: TextStyle(
+                              color: account.color != null
+                                  ? Color(int.parse(
+                                      account.color!.replaceFirst('#', '0xFF')))
+                                  : null,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        _formatBalance(account.formattedBalance),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.secondary,
-                          fontWeight: FontWeight.w500,
+                        '₹${account.balance.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],

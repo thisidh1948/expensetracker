@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:csv/csv.dart';
 import 'package:expense_tracker/database/models/dbtransaction.dart';
 import '../database/transactions_crud.dart';
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+import 'dart:isolate';
 
 class CSVImportResult {
   final int successCount;
@@ -16,6 +21,7 @@ class CSVImportResult {
 
 class CSVService {
   final TransactionCRUD _repository;
+  final Uuid _uuid = Uuid();
 
   CSVService({TransactionCRUD? repository})
       : _repository = repository ?? TransactionCRUD();
@@ -58,43 +64,18 @@ class CSVService {
       }
     }
 
-    final transactions = <DbTransaction>[];
-    final errors = <String>[];
-    int rowNum = 1;
+    // Use Isolates for multi-threading
+    final receivePort = ReceivePort();
+    await Isolate.spawn(_processRows, {
+      'rows': rows.skip(1).toList(),
+      'headerRow': headerRow,
+      'sendPort': receivePort.sendPort,
+      'uuid': _uuid,
+    });
 
-    // Process data rows
-    for (final row in rows.skip(1)) {
-      try {
-        if (row.length != headerRow.length) {
-          errors.add('Row $rowNum: Invalid number of columns');
-          continue;
-        }
-
-        final Map<String, dynamic> rowMap = {};
-        for (var i = 0; i < headerRow.length; i++) {
-          rowMap[headerRow[i]] = row[i];
-        }
-
-        transactions.add(DbTransaction(
-          id: int.tryParse(rowMap['id']?.toString() ?? ''),
-          account: rowMap['bank'].toString(),
-          section: rowMap['section']?.toString(),
-          category: rowMap['category'].toString(),
-          subcategory: rowMap['subcategory'].toString(),
-          item: rowMap['item']?.toString(),
-          cd: rowMap['cd'].toString().toLowerCase() == 'credit',
-          units: double.tryParse(rowMap['units']?.toString() ?? ''),
-          ppu: double.tryParse(rowMap['ppu']?.toString() ?? ''),
-          tax: double.tryParse(rowMap['tax']?.toString() ?? ''),
-          amount: double.parse(rowMap['amount'].toString()),
-          date: rowMap['date'] != null ? DateTime.parse(rowMap['date'].toString()) : null,
-          note: rowMap['note']?.toString(),
-        ));
-      } catch (e) {
-        errors.add('Row $rowNum: ${e.toString()}');
-      }
-      rowNum++;
-    }
+    final result = await receivePort.first as Map<String, dynamic>;
+    final transactions = result['transactions'] as List<DbTransaction>;
+    final errors = result['errors'] as List<String>;
 
     // Insert valid transactions
     int successCount = 0;
@@ -112,6 +93,65 @@ class CSVService {
       failureCount: (rows.length - 1) - successCount,
       errors: errors,
     );
+  }
+
+  static Future<void> _processRows(Map<String, dynamic> data) async {
+    final rows = data['rows'] as List<List<dynamic>>;
+    final headerRow = data['headerRow'] as List<String>;
+    final sendPort = data['sendPort'] as SendPort;
+    final uuid = data['uuid'] as Uuid;
+
+    final transactions = <DbTransaction>[];
+    final errors = <String>[];
+    int rowNum = 1;
+
+    for (final row in rows) {
+      try {
+        if (row.length != headerRow.length) {
+          errors.add('Row $rowNum: Invalid number of columns');
+          continue;
+        }
+
+        final Map<String, dynamic> rowMap = {};
+        for (var i = 0; i < headerRow.length; i++) {
+          rowMap[headerRow[i]] = row[i];
+        }
+        String uuid = Uuid().v4();
+        int id = int.parse(utf8.encode(uuid).fold(0, (a, b) => a + b).toString());
+
+        transactions.add(DbTransaction(
+          id: id,
+          account: rowMap['bank'].toString(),
+          section: rowMap['section']?.toString(),
+          category: rowMap['category'].toString(),
+          subcategory: rowMap['subcategory'].toString(),
+          item: rowMap['item']?.toString(),
+          cd: rowMap['cd'] != null ? rowMap['cd'].toString().toLowerCase() == 'credit' : false,
+          units: double.tryParse(rowMap['units']?.toString() ?? ''),
+          ppu: double.tryParse(rowMap['ppu']?.toString() ?? ''),
+          tax: double.tryParse(rowMap['tax']?.toString() ?? ''),
+          amount: double.parse(rowMap['amount'].toString()),
+          date: _parseDate(rowMap['date'].toString()),
+          note: rowMap['note']?.toString(),
+        ));
+
+        // Add a small delay between processing rows
+        await Future.delayed(Duration(milliseconds: 10));
+      } catch (e) {
+        errors.add('Row $rowNum: ${e.toString()}');
+      }
+      rowNum++;
+    }
+
+    sendPort.send({'transactions': transactions, 'errors': errors});
+  }
+
+  static DateTime _parseDate(String dateString) {
+    try {
+      return DateFormat('dd-MM-yyyy').parse(dateString);
+    } catch (e) {
+      throw FormatException('Invalid date format: $dateString');
+    }
   }
 
   String exportToCSV(List<DbTransaction> transactions) {
@@ -134,7 +174,7 @@ class CSVService {
         transaction.ppu?.toString() ?? '',
         transaction.tax?.toString() ?? '',
         transaction.amount.toString(),
-        transaction.date?.toIso8601String() ?? '',
+        DateFormat('dd-MM-yyyy').format(transaction.date ?? DateTime.now()),
         transaction.note ?? '',
       ].join(','));
     }

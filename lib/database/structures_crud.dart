@@ -3,10 +3,10 @@ import 'models/mapping_model.dart';
 import 'models/struct_model.dart';
 
 class StructuresCRUD {
-  final TransactioRepositry _db;
+  final DatabaseHelper _db;
 
-  StructuresCRUD({TransactioRepositry? databaseHelper})
-      : _db = databaseHelper ?? TransactioRepositry();
+  StructuresCRUD({DatabaseHelper? databaseHelper})
+      : _db = databaseHelper ?? DatabaseHelper();
 
   // Account operations
   Future<void> insert(String tableName, StructModel entity) async {

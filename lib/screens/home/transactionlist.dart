@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:expense_tracker/database/transactions_crud.dart';
 
 import '../../database/models/dbtransaction.dart';
-import '../addtransaction/add_transaction.dart';
+import '../addtransaction/add_transaction_page.dart';
 
 class TransactionListPage extends StatefulWidget {
   const TransactionListPage({Key? key}) : super(key: key);

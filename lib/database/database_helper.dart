@@ -1,90 +1,19 @@
 import 'dart:io';
+import 'package:expense_tracker/database/database_tables.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 import '../screens/utils/id_generator.dart';
 
 
-class TransactioRepositry {
-  static const _createTransactionTable = '''
-    CREATE TABLE IF NOT EXISTS Alldata (
-      id INTEGER PRIMARY KEY,
-      Account TEXT NOT NULL,
-      section TEXT,
-      category TEXT NOT NULL,
-      subcategory TEXT NOT NULL,
-      item TEXT,
-      cd BOOLEAN NOT NULL,
-      units REAL,
-      ppu REAL,
-      tax REAL,
-      amount REAL NOT NULL,
-      date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      note TEXT
-    )
-  ''';
+class DatabaseHelper {
 
-  static const _createAccountsTable = '''
-    CREATE TABLE IF NOT EXISTS Accounts (
-      name TEXT PRIMARY KEY,
-      icon TEXT
-    )
-  ''';
-
-  static const _createSectionTable = '''
-    CREATE TABLE IF NOT EXISTS Sections (
-      name TEXT PRIMARY KEY,
-      icon TEXT
-    )
-  ''';
-
-  static const _createCategoriesTable = '''
-    CREATE TABLE IF NOT EXISTS Categories (
-      name TEXT PRIMARY KEY,
-      icon TEXT
-    )
-  ''';
-
-  static const _createSubCategoriesTable = '''
-    CREATE TABLE IF NOT EXISTS SubCategories (
-      name TEXT PRIMARY KEY,
-      icon TEXT
-    )
-  ''';
-
-  static const _createItemsTable = '''
-    CREATE TABLE IF NOT EXISTS Items (
-      name TEXT PRIMARY KEY,
-      icon TEXT
-    )
-  ''';
-
-  static const _createSubcategoriesForCategoryTable = '''
-    CREATE TABLE IF NOT EXISTS SubcategoriesForCategory (
-      parent TEXT,
-      child TEXT,
-      PRIMARY KEY (parent, child),
-      FOREIGN KEY (parent) REFERENCES Categories(name) ON DELETE CASCADE,
-      FOREIGN KEY (child) REFERENCES SubCategories(name) ON DELETE CASCADE
-    )
-  ''';
-
-  static const _createItemsForSubcategoryTable = '''
-    CREATE TABLE IF NOT EXISTS ItemsForSubcategory (
-      parent TEXT,
-      child TEXT,
-      PRIMARY KEY (parent, child),
-      FOREIGN KEY (parent) REFERENCES SubCategories(name) ON DELETE CASCADE,
-      FOREIGN KEY (child) REFERENCES Items(name) ON DELETE CASCADE
-    )
-  ''';
-
-  static final TransactioRepositry _instance = TransactioRepositry._internal();
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
-  factory TransactioRepositry() => _instance;
+  factory DatabaseHelper() => _instance;
 
-  TransactioRepositry._internal();
+  DatabaseHelper._internal();
 
   Future<Database?> get database async {
     if (_database != null) return _database;
@@ -104,14 +33,16 @@ class TransactioRepositry {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    await db.execute(_createTransactionTable);
-    await db.execute(_createAccountsTable);
-    await db.execute(_createSectionTable);
-    await db.execute(_createCategoriesTable);
-    await db.execute(_createSubCategoriesTable);
-    await db.execute(_createItemsTable);
-    await db.execute(_createSubcategoriesForCategoryTable);
-    await db.execute(_createItemsForSubcategoryTable);
+    await db.execute(DatabaseTables.createTransactionTable);
+    await db.execute(DatabaseTables.createAccountsTable);
+    await db.execute(DatabaseTables.createSectionTable);
+    await db.execute(DatabaseTables.createCategoriesTable);
+    await db.execute(DatabaseTables.createSubCategoriesTable);
+    await db.execute(DatabaseTables.createItemsTable);
+    await db.execute(DatabaseTables.createSubcategoriesForCategoryTable);
+    await db.execute(DatabaseTables.createItemsForSubcategoryTable);
+    await db.execute(DatabaseTables.createTemplatesTable);
+    await db.execute(DatabaseTables.createAppDataTable);
   }
 
   // Method to check if database exists

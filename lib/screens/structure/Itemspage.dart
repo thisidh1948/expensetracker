@@ -1,14 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:expense_tracker/database/structures_crud.dart';
-import 'package:expense_tracker/database/models/mapping_model.dart';
-import 'package:expense_tracker/database/models/struct_model.dart';
+import '../../database/models/mapping_model.dart';
+import '../../database/models/struct_model.dart';
+import '../../database/structures_crud.dart';
+import 'addpage_mapping.dart';
 
 class ItemsPage extends StatefulWidget {
   final String subcategory;
 
-  const ItemsPage({Key? key, required this.subcategory}) : super(key: key);
+  const ItemsPage({
+    Key? key,
+    required this.subcategory,
+  }) : super(key: key);
 
   @override
   State<ItemsPage> createState() => _ItemsPageState();
@@ -25,294 +29,263 @@ class _ItemsPageState extends State<ItemsPage> {
 
   void _refreshItems() {
     setState(() {
-      _itemsFuture = _loadItems();
+      _itemsFuture =
+          StructuresCRUD().getItemsForSubcategory(widget.subcategory);
     });
-  }
-
-  Future<List<MappingModel>> _loadItems() async {
-    try {
-      return await StructuresCRUD().getItemsForSubcategory(widget.subcategory);
-    } catch (e) {
-      print('Error loading items: $e');
-      return [];
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Items: ${widget.subcategory}'),
+        title: Text('Items - ${widget.subcategory}'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          _refreshItems();
-        },
-        child: FutureBuilder<List<MappingModel>>(
-          future: _itemsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Error: ${snapshot.error}'),
-                    ElevatedButton(
-                      onPressed: _refreshItems,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final items = snapshot.data ?? [];
-
-            if (items.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No items found\nAdd using + button',
-                  textAlign: TextAlign.center,
-                ),
-              );
-            }
-
-            return ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 4.0,
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.label),
-                    title: Text(item.child),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => _showDeleteDialog(context, item),
-                    ),
-                  ),
-                );
-              },
+      body: FutureBuilder<List<MappingModel>>(
+        future: _itemsFuture,
+        builder: (context, mappingSnapshot) {
+          if (mappingSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
             );
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showItemsDialog(context),
-        child: const Icon(Icons.add),
-        tooltip: 'Add Item',
-      ),
-    );
-  }
+          }
 
-  Future<void> _showItemsDialog(BuildContext context) async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Add item to ${widget.subcategory}'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: FutureBuilder<List<StructModel>>(
-            future: StructuresCRUD().getAllTableData('Items'),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-
-              final subcategories = snapshot.data ?? [];
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
+          if (mappingSnapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ListTile(
-                    leading: const Icon(Icons.add_circle),
-                    title: const Text('Add New Item'),
-                    onTap: () => _showAddItemDialog(context),
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 60,
                   ),
-                  const Divider(),
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: subcategories.length,
-                      itemBuilder: (context, index) {
-                        final subcategory = subcategories[index];
-                        return ListTile(
-                          title: Text(subcategory.name),
-                          onTap: () async {
-                            try {
-                              await StructuresCRUD().insertItemForSubcategory(
-                                widget.subcategory,
-                                subcategory.name,
-                              );
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                _refreshItems();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Subcategory added successfully'),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${mappingSnapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _refreshItems,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final items = mappingSnapshot.data ?? [];
+
+          if (items.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.inventory,
+                    size: 60,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No items found',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      BottomSheetUtils.showStructureBottomSheet(
+                        context: context,
+                        title: 'Select Item',
+                        structureType: 'Items',
+                        parentType: 'Subcategories',
+                        parentName: widget.subcategory,
+                        availableIcons: itemIcons,
+                        onRefresh: _refreshItems,
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Item'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              _refreshItems();
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: FutureBuilder<List<StructModel>>(
+                      future: StructuresCRUD().getAllTableData('Items'),
+                      builder: (context, structSnapshot) {
+                        if (structSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        if (structSnapshot.hasError) {
+                          return Center(
+                            child: Text('Error: ${structSnapshot.error}'),
+                          );
+                        }
+
+                        final structModels = structSnapshot.data ?? [];
+                        final structModelMap = {
+                          for (var model in structModels) model.name: model
+                        };
+
+                        return ListView.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            final structModel = structModelMap[item.child];
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ListTile(
+                                leading: Icon(
+                                  structModel?.icon != null
+                                      ? IconData(
+                                          int.parse(structModel!.icon!),
+                                          fontFamily: 'MaterialIcons',
+                                        )
+                                      : Icons.inventory,
+                                  color: structModel?.color != null
+                                      ? Color(int.parse(structModel!.color!
+                                          .replaceFirst('#', '0xFF')))
+                                      : Colors.blue,
+                                  size: 28,
+                                ),
+                                title: Text(
+                                  item.child,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error: $e'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                          Icons.delete_outline_rounded),
+                                      color: Colors.red,
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Delete Item'),
+                                            content: Text(
+                                                'Are you sure you want to delete "${item.child}"?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: const Text('CANCEL'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () async {
+                                                  try {
+                                                    await StructuresCRUD()
+                                                        .deleteItemForSubcategory(
+                                                      widget.subcategory,
+                                                      item.child,
+                                                    );
+                                                    if (context.mounted) {
+                                                      Navigator.pop(context);
+                                                      _refreshItems();
+                                                      ScaffoldMessenger.of(
+                                                              context)
+                                                          .showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                              'Item deleted successfully'),
+                                                          backgroundColor:
+                                                              Colors.green,
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
+                                                    if (context.mounted) {
+                                                      Navigator.pop(context);
+                                                      ScaffoldMessenger.of(
+                                                              context)
+                                                          .showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(
+                                                              'Error: ${e.toString()}'),
+                                                          backgroundColor:
+                                                              Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                },
+                                                child: const Text(
+                                                  'DELETE',
+                                                  style: TextStyle(
+                                                      color: Colors.red),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
                           },
                         );
                       },
                     ),
                   ),
                 ],
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showAddItemDialog(BuildContext context) async {
-    final nameController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Item'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Item Name',
-              border: OutlineInputBorder(),
+              ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter an item name';
-              }
-              return null;
-            },
-            textCapitalization: TextCapitalization.words,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                try {
-                  final itemName = nameController.text.trim();
-                  // First insert into Items table
-                  await StructuresCRUD().insert(
-                    'Items',
-                    StructModel(name: itemName),
-                  );
-                  // Then create mapping
-                  await StructuresCRUD().insertItemForSubcategory(
-                    widget.subcategory,
-                    itemName,
-                  );
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    _refreshItems();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Item added successfully'),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error adding item: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              }
-            },
-            child: const Text('ADD'),
-          ),
-        ],
+          );
+        },
       ),
-    );
-  }
-
-  Future<void> _showDeleteDialog(BuildContext context, MappingModel item) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Item'),
-        content: Text('Are you sure you want to delete "${item.child}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await StructuresCRUD().deleteItemForSubcategory(
-                  item.parent,
-                  item.child,
-                );
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  _refreshItems();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Item deleted successfully'),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error deleting item: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('DELETE'),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          BottomSheetUtils.showStructureBottomSheet(
+            context: context,
+            title: 'Select Item',
+            structureType: 'Items',
+            parentType: 'Subcategories',
+            parentName: widget.subcategory,
+            availableIcons: itemIcons,
+            onRefresh: _refreshItems,
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
 }
+
+// Define your item icons
+final List<Map<String, dynamic>> itemIcons = [
+  {'icon': Icons.inventory, 'label': 'Inventory'},
+  {'icon': Icons.shopping_bag, 'label': 'Shopping'},
+  {'icon': Icons.category, 'label': 'Category'},
+  {'icon': Icons.local_offer, 'label': 'Offer'},
+  {'icon': Icons.shopping_cart, 'label': 'Cart'},
+  {'icon': Icons.store, 'label': 'Store'},
+];

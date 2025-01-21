@@ -1,11 +1,12 @@
-import 'dart:math';
 import 'package:expense_tracker/screens/drawer/customdrawer.dart';
-import 'package:expense_tracker/screens/stats/stats.dart';
-import 'package:expense_tracker/screens/addtransaction/add_transaction.dart';
 import 'package:expense_tracker/screens/main_screen.dart';
-import 'package:expense_tracker/screens/home/customappbar.dart';
-import 'package:flutter/material.dart';
+import 'package:expense_tracker/screens/stats/stats.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
+import 'addtransaction/add_transaction_page.dart';
+import 'addtransaction/templatespage.dart';
+import 'bottomnavbar/transactions/transaction_view_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,72 +16,108 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final double _totalBalance = 0.0;
-  var wigetList = [
-    const MainScreen(),
-    const StatScreen(),
-  ];
-
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  late final List<Widget> wigetList;
   int index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    wigetList = [
+      MainScreen(scaffoldKey: _scaffoldKey),
+      const TransactionPage(),
+      const StatScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(),
+      key: _scaffoldKey,
+      drawer: customDrawer(context),
       bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         child: BottomNavigationBar(
-            onTap: (value) {
-              setState(() {
-                index = value;
-              });
-            },
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? Colors.black
-                : Colors.white,
-            showSelectedLabels: false,
-            showUnselectedLabels: false,
-            elevation: 3,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.graph_square_fill),
-                label: 'stats',
-              ),
-            ]),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) =>  AddTransactionPage(),
-            fullscreenDialog: true),
-          );
-          if (result == true) {
+          currentIndex: index,
+          onTap: (value) {
             setState(() {
-              index = 0;
+              index = value;
             });
-          }
-        },
-        shape: const CircleBorder(),
-        child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
-                  Theme.of(context).colorScheme.tertiary,
-                ], transform: const GradientRotation(pi / 4))),
-            child: const Icon(CupertinoIcons.add)),
+          },
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.black
+              : Colors.white,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Colors.grey,
+          elevation: 3,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.list_alt),
+              label: 'Transactions',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.graph_square_fill),
+              label: 'Stats',
+            ),
+          ],
+        ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      drawer: customDrawer(context),
-      body: index == 0 ? const MainScreen() : const StatScreen(),
+      floatingActionButton: _buildFloatingActionButtons(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      body: wigetList[index],
+    );
+  }
+
+  Widget _buildFloatingActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 30), // Adjust spacing as needed
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Template Button
+          FloatingActionButton(
+            heroTag: "template",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TemplatesPage(),
+                  fullscreenDialog: true,
+                ),
+              );
+            },
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            child: const Icon(Icons.bookmark_add),
+          ),
+          const SizedBox(width: 16), // Space between buttons
+          // Add Transaction Button
+          FloatingActionButton(
+            heroTag: "transaction",
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddTransactionPage(isUpdate: false),
+                  fullscreenDialog: true,
+                ),
+              );
+              if (result == true) {
+                setState(() {
+                  index = 0;
+                });
+              }
+            },
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: const Icon(Icons.add),
+          ),
+        ],
+      ),
     );
   }
 }

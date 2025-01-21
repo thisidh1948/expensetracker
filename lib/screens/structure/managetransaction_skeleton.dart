@@ -1,12 +1,56 @@
 import 'package:expense_tracker/screens/structure/sectionspage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+ // Add this import
 
+import '../../database/database_helper.dart';
 import 'accountspage.dart';
 import 'categoriespage.dart';
 
 class ManageTransactionSkeleton extends StatelessWidget {
   const ManageTransactionSkeleton({Key? key}) : super(key: key);
+
+  Future<void> _showResetConfirmationDialog(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Reset Database'),
+          content: const Text(
+            'Are you sure you want to reset the database? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                try {
+                  await DatabaseHelper().resetDatabase();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Database reset successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error resetting database: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Reset', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +91,13 @@ class ManageTransactionSkeleton extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const CategoriesPage()),
               ),
             ),
+            const SizedBox(height: 16),
+            _buildNavigationButton(
+              context,
+              'Reset Database',
+              Icons.delete_forever,
+              () => _showResetConfirmationDialog(context),
+            ),
           ],
         ),
       ),
@@ -68,7 +119,9 @@ class ManageTransactionSkeleton extends StatelessWidget {
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
-          backgroundColor: Theme.of(context).primaryColor,
+          backgroundColor: title == 'Reset Database'
+              ? Colors.red
+              : Theme.of(context).primaryColor,
         ),
       ),
     );

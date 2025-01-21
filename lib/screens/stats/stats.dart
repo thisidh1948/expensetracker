@@ -38,9 +38,6 @@ class _StatScreenState extends State<StatScreen> {
     final balance = _summary.balance;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistics'),
-      ),
       body: RefreshIndicator(
         onRefresh: _loadTransactions,
         child: SingleChildScrollView(
@@ -49,6 +46,7 @@ class _StatScreenState extends State<StatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 30),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),

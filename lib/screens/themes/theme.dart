@@ -31,6 +31,7 @@ final ThemeData lightTheme = ThemeData(
     onError: Colors.white,
     onBackground: Colors.black,
     onSurface: Colors.black,
+    tertiary: Colors.black38,
   ),
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.blue,
@@ -105,10 +106,11 @@ final ThemeData darkTheme = ThemeData(
     background: Colors.black,
     surface: const Color(0xFF0F172A),
     onPrimary: Colors.white,
-    onSecondary: Colors.black,
+    onSecondary: Colors.white38,
     onError: Colors.white,
     onBackground: Colors.white,
     onSurface: Colors.white,
+    tertiary: Colors.white38
   ),
   appBarTheme: const AppBarTheme(
     backgroundColor: Color(0xFF0F172A),
