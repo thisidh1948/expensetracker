@@ -1,9 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import '../../database/models/mapping_model.dart';
 import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
+import '../../widgets/customIcons.dart';
 import 'addpage_mapping.dart';
 
 class ItemsPage extends StatefulWidget {
@@ -29,8 +28,7 @@ class _ItemsPageState extends State<ItemsPage> {
 
   void _refreshItems() {
     setState(() {
-      _itemsFuture =
-          StructuresCRUD().getItemsForSubcategory(widget.subcategory);
+      _itemsFuture = StructuresCRUD().getItemsForSubcategory(widget.subcategory);
     });
   }
 
@@ -105,7 +103,7 @@ class _ItemsPageState extends State<ItemsPage> {
                         structureType: 'Items',
                         parentType: 'Subcategories',
                         parentName: widget.subcategory,
-                        availableIcons: itemIcons,
+                        availableIcons: const [],
                         onRefresh: _refreshItems,
                       );
                     },
@@ -128,126 +126,67 @@ class _ItemsPageState extends State<ItemsPage> {
                   Expanded(
                     child: FutureBuilder<List<StructModel>>(
                       future: StructuresCRUD().getAllTableData('Items'),
-                      builder: (context, structSnapshot) {
-                        if (structSnapshot.connectionState ==
+                      builder: (context, itemsSnapshot) {
+                        if (itemsSnapshot.connectionState ==
                             ConnectionState.waiting) {
                           return const Center(
-                              child: CircularProgressIndicator());
-                        }
-
-                        if (structSnapshot.hasError) {
-                          return Center(
-                            child: Text('Error: ${structSnapshot.error}'),
+                            child: CircularProgressIndicator(),
                           );
                         }
 
-                        final structModels = structSnapshot.data ?? [];
-                        final structModelMap = {
-                          for (var model in structModels) model.name: model
-                        };
+                        final itemStructures = itemsSnapshot.data ?? [];
 
                         return ListView.builder(
-                          itemCount: items.length,
+                          itemCount: itemStructures.length,
                           itemBuilder: (context, index) {
-                            final item = items[index];
-                            final structModel = structModelMap[item.child];
+                            final item = itemStructures[index];
+                            final Color itemColor = item.color != null
+                                ? Color(int.parse(
+                                    item.color!.replaceFirst('#', '0xFF')))
+                                : Theme.of(context).primaryColor;
 
                             return Card(
                               margin: const EdgeInsets.symmetric(vertical: 4),
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
                               child: ListTile(
-                                leading: Icon(
-                                  structModel?.icon != null
-                                      ? IconData(
-                                          int.parse(structModel!.icon!),
-                                          fontFamily: 'MaterialIcons',
-                                        )
-                                      : Icons.inventory,
-                                  color: structModel?.color != null
-                                      ? Color(int.parse(structModel!.color!
-                                          .replaceFirst('#', '0xFF')))
-                                      : Colors.blue,
-                                  size: 28,
+                                leading: CustomIcons.getIcon(
+                                  item.icon,
+                                  size: 24,
                                 ),
-                                title: Text(
-                                  item.child,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(
-                                          Icons.delete_outline_rounded),
-                                      color: Colors.red,
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Delete Item'),
-                                            content: Text(
-                                                'Are you sure you want to delete "${item.child}"?'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(context),
-                                                child: const Text('CANCEL'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () async {
-                                                  try {
-                                                    await StructuresCRUD()
-                                                        .deleteItemForSubcategory(
-                                                      widget.subcategory,
-                                                      item.child,
-                                                    );
-                                                    if (context.mounted) {
-                                                      Navigator.pop(context);
-                                                      _refreshItems();
-                                                      ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text(
-                                                              'Item deleted successfully'),
-                                                          backgroundColor:
-                                                              Colors.green,
-                                                        ),
-                                                      );
-                                                    }
-                                                  } catch (e) {
-                                                    if (context.mounted) {
-                                                      Navigator.pop(context);
-                                                      ScaffoldMessenger.of(
-                                                              context)
-                                                          .showSnackBar(
-                                                        SnackBar(
-                                                          content: Text(
-                                                              'Error: ${e.toString()}'),
-                                                          backgroundColor:
-                                                              Colors.red,
-                                                        ),
-                                                      );
-                                                    }
-                                                  }
-                                                },
-                                                child: const Text(
-                                                  'DELETE',
-                                                  style: TextStyle(
-                                                      color: Colors.red),
-                                                ),
-                                              ),
-                                            ],
+                                title: Text(item.name),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  color: Colors.red,
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Confirm Deletion'),
+                                        content: Text(
+                                            'Are you sure you want to remove ${item.name}?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text('Cancel'),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                  ],
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text('Delete'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true) {
+                                      await StructuresCRUD()
+                                          .deleteItemForSubcategory(
+                                        widget.subcategory,
+                                        item.name,
+                                      );
+                                      _refreshItems();
+                                    }
+                                  },
                                 ),
                               ),
                             );
@@ -270,7 +209,7 @@ class _ItemsPageState extends State<ItemsPage> {
             structureType: 'Items',
             parentType: 'Subcategories',
             parentName: widget.subcategory,
-            availableIcons: itemIcons,
+            availableIcons: const [],
             onRefresh: _refreshItems,
           );
         },
@@ -279,13 +218,3 @@ class _ItemsPageState extends State<ItemsPage> {
     );
   }
 }
-
-// Define your item icons
-final List<Map<String, dynamic>> itemIcons = [
-  {'icon': Icons.inventory, 'label': 'Inventory'},
-  {'icon': Icons.shopping_bag, 'label': 'Shopping'},
-  {'icon': Icons.category, 'label': 'Category'},
-  {'icon': Icons.local_offer, 'label': 'Offer'},
-  {'icon': Icons.shopping_cart, 'label': 'Cart'},
-  {'icon': Icons.store, 'label': 'Store'},
-];

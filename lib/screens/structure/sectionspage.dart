@@ -1,3 +1,4 @@
+import 'package:expense_tracker/widgets/customIcons.dart';
 import 'package:flutter/material.dart';
 
 import '../../database/models/struct_model.dart';
@@ -151,7 +152,6 @@ class _SectionsPageState extends State<SectionsPage> {
                       CommonAddDialog.showStructureDialog(
                         context: context,
                         structureType: 'Sections',
-                        availableIcons: availableIcons,
                       ).then((_) => _loadSections());
                     },
                     icon: const Icon(Icons.add),
@@ -190,7 +190,6 @@ class _SectionsPageState extends State<SectionsPage> {
                       CommonAddDialog.showStructureDialog(
                         context: context,
                         structureType: 'Sections',
-                        availableIcons: availableIcons,
                         existingData: section,
                       ).then((_) => _loadSections());
                     },
@@ -205,30 +204,29 @@ class _SectionsPageState extends State<SectionsPage> {
                               color: sectionColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(
-                              section.icon != null
-                                  ? IconData(int.parse(section.icon!),
-                                      fontFamily: 'MaterialIcons')
-                                  : Icons.folder,
+                            child: CustomIcons.getIcon(section.icon, size: 24),
+                          ),
+                          const SizedBox(width: 16),
+
+                          // Section Color
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
                               color: sectionColor,
-                              size: 24,
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                           const SizedBox(width: 16),
 
-                          // Section Details
+                          // Section Name
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  section.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              section.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
 
@@ -243,7 +241,6 @@ class _SectionsPageState extends State<SectionsPage> {
                                   CommonAddDialog.showStructureDialog(
                                     context: context,
                                     structureType: 'Sections',
-                                    availableIcons: availableIcons,
                                     existingData: section,
                                   ).then((_) => _loadSections());
                                 },
@@ -253,14 +250,16 @@ class _SectionsPageState extends State<SectionsPage> {
                                 color: Colors.red,
                                 onPressed: () =>
                                     CommonDeleteDialog.showDeleteDialog(
-                                      context: context,
-                                      structureType: 'Sections', // or 'Sections', 'Categories', etc.
-                                      item: section,
-                                      onDeleteSuccess: _loadSections, // or _loadSections, etc.
-                                      // Optional custom messages:
-                                      // customTitle: 'Custom Delete Title',
-                                      // customMessage: 'Custom delete confirmation message',
-                                    ),
+                                  context: context,
+                                  structureType: 'Sections',
+                                  // or 'Sections', 'Categories', etc.
+                                  item: section,
+                                  onDeleteSuccess:
+                                      _loadSections, // or _loadSections, etc.
+                                  // Optional custom messages:
+                                  // customTitle: 'Custom Delete Title',
+                                  // customMessage: 'Custom delete confirmation message',
+                                ),
                               ),
                             ],
                           ),
@@ -279,7 +278,6 @@ class _SectionsPageState extends State<SectionsPage> {
           CommonAddDialog.showStructureDialog(
             context: context,
             structureType: 'Sections',
-            availableIcons: availableIcons,
           ).then((_) => _loadSections());
         },
         child: const Icon(Icons.add),
@@ -287,14 +285,3 @@ class _SectionsPageState extends State<SectionsPage> {
     );
   }
 }
-
-// Define available icons for sections
-final List<Map<String, dynamic>> availableIcons = [
-  {'icon': Icons.folder, 'label': 'Folder'},
-  {'icon': Icons.category, 'label': 'Category'},
-  {'icon': Icons.bookmark, 'label': 'Bookmark'},
-  {'icon': Icons.label, 'label': 'Label'},
-  {'icon': Icons.folder_special, 'label': 'Special'},
-  {'icon': Icons.folder_shared, 'label': 'Shared'},
-  // Add more icons as needed
-];

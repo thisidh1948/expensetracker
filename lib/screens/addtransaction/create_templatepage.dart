@@ -1,12 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../database/database_helper.dart';
 import '../../database/models/template_model.dart';
 import '../../database/structures_crud.dart';
 import '../../database/templates_crud.dart';
 import '../../widgets/color_picker_widget.dart';
-import '../../widgets/icon_picker_widget.dart';
+import '../../widgets/iconpicker_widget.dart';
 
 class CreateTemplatePage extends StatefulWidget {
   @override

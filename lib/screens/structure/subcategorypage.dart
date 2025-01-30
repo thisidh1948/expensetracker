@@ -1,3 +1,4 @@
+import 'package:expense_tracker/widgets/customIcons.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -245,19 +246,7 @@ class _SubcategoryPageState extends State<SubcategoryPage> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: ListTile(
-                                  leading: Icon(
-                                    structModel?.icon != null
-                                        ? IconData(
-                                            int.parse(structModel!.icon!),
-                                            fontFamily: 'MaterialIcons',
-                                          )
-                                        : Icons.subdirectory_arrow_right,
-                                    color: structModel?.color != null
-                                        ? Color(int.parse(structModel!.color!
-                                            .replaceFirst('#', '0xFF')))
-                                        : Colors.blue,
-                                    size: 28,
-                                  ),
+                                  leading: CustomIcons.getIcon(structModel?.icon),
                                   title: Text(
                                     subcategory.child,
                                     style: const TextStyle(

@@ -1,8 +1,9 @@
-// Create a new file: lib/utils/bottom_sheet_utils.dart
+// lib/utils/bottom_sheet_utils.dart
 
 import 'package:flutter/material.dart';
 import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
+import '../../widgets/customIcons.dart';
 import 'common_add_dialog.dart';
 
 class BottomSheetUtils {
@@ -102,7 +103,6 @@ class BottomSheetUtils {
                                   await CommonAddDialog.showStructureDialog(
                                     context: context,
                                     structureType: structureType,
-                                    availableIcons: availableIcons,
                                   );
 
                                   if (context.mounted) {
@@ -114,19 +114,16 @@ class BottomSheetUtils {
                               const Divider(),
                               // Existing Items
                               ...structures.map((structure) {
+                                final Color structureColor =
+                                    structure.color != null
+                                        ? Color(int.parse(structure.color!
+                                            .replaceFirst('#', '0xFF')))
+                                        : Theme.of(context).primaryColor;
+
                                 return ListTile(
-                                  leading: Icon(
-                                    structure.icon != null
-                                        ? IconData(
-                                            int.parse(structure.icon!),
-                                            fontFamily: 'MaterialIcons',
-                                          )
-                                        : Icons.circle,
-                                    color: structure.color != null
-                                        ? Color(int.parse(
-                                            structure.color!.replaceFirst(
-                                                '#', '0xFF')))
-                                        : Colors.grey,
+                                  leading: CustomIcons.getIcon(
+                                    structure.icon,
+                                    size: 24,
                                   ),
                                   title: Text(structure.name),
                                   onTap: () async {
@@ -138,7 +135,8 @@ class BottomSheetUtils {
                                           structure.name,
                                         );
                                       } else if (structureType == 'Items') {
-                                        await StructuresCRUD().insertItemForSubcategory(
+                                        await StructuresCRUD()
+                                            .insertItemForSubcategory(
                                           parentName,
                                           structure.name,
                                         );
@@ -147,7 +145,8 @@ class BottomSheetUtils {
                                       if (context.mounted) {
                                         Navigator.pop(context);
                                         onRefresh();
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
                                             content: Text(
                                                 '${structureType.substring(0, structureType.length - 1)} linked successfully'),
@@ -157,9 +156,11 @@ class BottomSheetUtils {
                                       }
                                     } catch (e) {
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           SnackBar(
-                                            content: Text('Error: ${e.toString()}'),
+                                            content:
+                                                Text('Error: ${e.toString()}'),
                                             backgroundColor: Colors.red,
                                           ),
                                         );

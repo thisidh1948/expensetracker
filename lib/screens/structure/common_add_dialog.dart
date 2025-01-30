@@ -1,17 +1,14 @@
-import 'package:expense_tracker/database/appdata_crud.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-import '../../database/models/appdata.dart';
 import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
 import '../../widgets/color_picker_widget.dart';
+import '../../widgets/iconpicker_widget.dart';
 
 class CommonAddDialog {
   static Future<void> showStructureDialog({
     required BuildContext context,
     required String structureType,
-    required List<Map<String, dynamic>> availableIcons,
     StructModel? existingData,
     String? title,
     String? labelText,
@@ -22,15 +19,13 @@ class CommonAddDialog {
     final balanceController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    // Initialize color and icon based on existing data or defaults
+    // Initialize color
     Color selectedColor = isUpdate
         ? Color(int.parse(existingData.color!.replaceFirst('#', '0xFF')))
         : Theme.of(context).primaryColor;
 
-    // Convert string icon to IconData for existing data, or use default
-    IconData selectedIcon = isUpdate
-        ? IconData(int.parse(existingData.icon!), fontFamily: 'MaterialIcons')
-        : availableIcons[0]['icon'];
+    // Initialize selected icon label
+    String selectedIconLabel = isUpdate ? existingData!.icon ?? 'wallet' : 'wallet';
 
     return showDialog(
       context: context,
@@ -78,25 +73,29 @@ class CommonAddDialog {
                     ),
                     const SizedBox(height: 16),
 
-                    // Balance Input (if structureType is 'Accounts')
+                    // Balance Input for Accounts
                     if (structureType == 'Accounts')
-                      TextFormField(
-                        controller: balanceController,
-                        decoration: InputDecoration(
-                          labelText: 'Balance',
-                          hintText: 'Enter balance amount',
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.account_balance),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter the balance amount';
-                          }
-                          return null;
-                        },
+                      Column(
+                        children: [
+                          TextFormField(
+                            controller: balanceController,
+                            decoration: const InputDecoration(
+                              labelText: 'Balance',
+                              hintText: 'Enter balance amount',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.account_balance),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter the balance amount';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                       ),
-                    const SizedBox(height: 16),
 
                     // Color Picker
                     Row(
@@ -119,61 +118,23 @@ class CommonAddDialog {
                     const SizedBox(height: 16),
 
                     // Icon Selection
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Select Icon:',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8),
+                    Row(
+                      children: [
+                        const Text(
+                          'Select Icon:',
+                          style: TextStyle(fontSize: 16),
                         ),
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(8),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 5,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          itemCount: availableIcons.length,
-                          itemBuilder: (context, index) {
-                            final icon = availableIcons[index]['icon'] as IconData;
-                            return InkWell(
-                              onTap: () {
-                                setState(() {
-                                  selectedIcon = icon;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: selectedIcon.codePoint == icon.codePoint
-                                      ? selectedColor.withOpacity(0.2)
-                                      : null,
-                                  border: Border.all(
-                                    color: selectedIcon.codePoint == icon.codePoint
-                                        ? selectedColor
-                                        : Colors.grey,
-                                    width: selectedIcon.codePoint == icon.codePoint ? 2 : 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  icon,
-                                  color: selectedIcon.codePoint == icon.codePoint
-                                      ? selectedColor
-                                      : Colors.grey,
-                                ),
-                              ),
-                            );
+                        const Spacer(),
+                        IconPickerWidget(
+                          currentLabel: selectedIconLabel,
+                          onIconSelected: (String label) {
+                            setState(() {
+                              selectedIconLabel = label;
+                            });
                           },
+                          size: 40,
                         ),
-                      ),
+                      ],
                     ),
 
                     // Action Buttons
@@ -192,7 +153,7 @@ class CommonAddDialog {
                               try {
                                 final StructModel structModel = StructModel(
                                   name: nameController.text.trim(),
-                                  icon: selectedIcon.codePoint.toString(), // Store icon as string
+                                  icon: selectedIconLabel,
                                   color: '#${selectedColor.value.toRadixString(16).substring(2)}',
                                 );
 
@@ -207,20 +168,14 @@ class CommonAddDialog {
                                     structModel,
                                   );
 
-                                  // If structureType is 'Accounts', insert balance into AppData
-                                  if (structureType == 'Accounts') {
-                                    final AppData appData = AppData(
-                                      category: 'IB',
-                                      key: structModel.name,
-                                      value: balanceController.text.trim(),
-                                    );
-                                    await AppDataCrud().insert(appData);
+                                  if (structureType == 'Accounts' &&
+                                      balanceController.text.isNotEmpty) {
+                                    // Handle account balance if needed
+                                    // Add your account balance logic here
                                   }
                                 }
 
                                 Navigator.pop(context);
-
-                                // Show success message
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(

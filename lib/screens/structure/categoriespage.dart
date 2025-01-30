@@ -1,4 +1,5 @@
 import 'package:expense_tracker/screens/structure/subcategorypage.dart';
+import 'package:expense_tracker/widgets/customIcons.dart';
 import 'package:flutter/material.dart';
 import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
@@ -153,7 +154,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       CommonAddDialog.showStructureDialog(
                         context: context,
                         structureType: 'Categories',
-                        availableIcons: categoryIcons,
                       ).then((_) => _loadCategories());
                     },
                     icon: const Icon(Icons.add),
@@ -200,7 +200,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       CommonAddDialog.showStructureDialog(
                         context: context,
                         structureType: 'Categories',
-                        availableIcons: categoryIcons,
                         existingData: category,
                       ).then((_) => _loadCategories());
                     },
@@ -215,17 +214,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
                               color: categoryColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(
-                              category.icon != null
-                                  ? IconData(int.parse(category.icon!),
-                                      fontFamily: 'MaterialIcons')
-                                  : Icons.category,
-                              color: categoryColor,
-                              size: 24,
-                            ),
+                            child: CustomIcons.getIcon(category.icon, size: 24),
                           ),
                           const SizedBox(width: 16),
-
                           // Category Details
                           Expanded(
                             child: Column(
@@ -247,19 +238,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit),
-                                color: Colors.blue,
-                                onPressed: () {
-                                  CommonAddDialog.showStructureDialog(
-                                    context: context,
-                                    structureType: 'Categories',
-                                    availableIcons: categoryIcons,
-                                    existingData: category,
-                                  ).then((_) => _loadCategories());
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
+                                icon: const Icon(Icons.delete_outline_rounded),
                                 color: Colors.red,
                                 onPressed: () {
                                   CommonDeleteDialog.showDeleteDialog(
@@ -287,7 +266,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
           CommonAddDialog.showStructureDialog(
             context: context,
             structureType: 'Categories',
-            availableIcons: categoryIcons,
           ).then((_) => _loadCategories());
         },
         child: const Icon(Icons.add),
@@ -295,24 +273,3 @@ class _CategoriesPageState extends State<CategoriesPage> {
     );
   }
 }
-
-// Define category-specific icons
-final List<Map<String, dynamic>> categoryIcons = [
-  {'icon': Icons.category, 'label': 'Category'},
-  {'icon': Icons.shopping_cart, 'label': 'Shopping'},
-  {'icon': Icons.restaurant_menu, 'label': 'Food'},
-  {'icon': Icons.local_hospital, 'label': 'Health'},
-  {'icon': Icons.directions_car, 'label': 'Transport'},
-  {'icon': Icons.home, 'label': 'Home'},
-  {'icon': Icons.school, 'label': 'Education'},
-  {'icon': Icons.sports_esports, 'label': 'Entertainment'},
-  {'icon': Icons.card_giftcard, 'label': 'Gift'},
-  {'icon': Icons.attach_money, 'label': 'Money'},
-  {'icon': Icons.shopping_bag, 'label': 'Shopping Bag'},
-  {'icon': Icons.local_grocery_store, 'label': 'Grocery'},
-  {'icon': Icons.fitness_center, 'label': 'Fitness'},
-  {'icon': Icons.pets, 'label': 'Pets'},
-  {'icon': Icons.flight_takeoff, 'label': 'Travel'},
-  {'icon': Icons.nature, 'label': 'nature'},
-  // Add more category-specific icons as needed
-];

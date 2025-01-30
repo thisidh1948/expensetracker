@@ -1,7 +1,8 @@
+import 'package:expense_tracker/widgets/customIcons.dart';
 import 'package:flutter/material.dart';
-
 import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
+import '../../widgets/iconpicker_widget.dart';
 import 'common_add_dialog.dart';
 import 'common_delete_dialog.dart';
 
@@ -135,10 +136,10 @@ class _AccountsPageState extends State<AccountsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.account_balance_wallet_outlined,
+                  IconPickerWidget(
+                    currentLabel: 'wallet',
+                    onIconSelected: (String label) {},
                     size: 60,
-                    color: Colors.grey,
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -154,7 +155,6 @@ class _AccountsPageState extends State<AccountsPage> {
                       CommonAddDialog.showStructureDialog(
                         context: context,
                         structureType: 'Accounts',
-                        availableIcons: availableIcons,
                       ).then((_) => _loadAccounts());
                     },
                     icon: const Icon(Icons.add),
@@ -193,7 +193,6 @@ class _AccountsPageState extends State<AccountsPage> {
                       CommonAddDialog.showStructureDialog(
                         context: context,
                         structureType: 'Accounts',
-                        availableIcons: availableIcons,
                         existingData: account,
                       ).then((_) => _loadAccounts());
                     },
@@ -208,14 +207,7 @@ class _AccountsPageState extends State<AccountsPage> {
                               color: accountColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(
-                              account.icon != null
-                                  ? IconData(int.parse(account.icon!),
-                                      fontFamily: 'MaterialIcons')
-                                  : Icons.account_balance,
-                              color: accountColor,
-                              size: 24,
-                            ),
+                            child: CustomIcons.getIcon(account.icon, size:24),
                           ),
                           const SizedBox(width: 16),
 
@@ -241,19 +233,14 @@ class _AccountsPageState extends State<AccountsPage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.delete),
+                                icon: const Icon(Icons.delete_outline),
                                 color: Colors.red,
                                 onPressed: () =>
                                     CommonDeleteDialog.showDeleteDialog(
                                   context: context,
-                                  structureType: 'Sections',
-                                  // or 'Sections', 'Categories', etc.
+                                  structureType: 'Accounts',
                                   item: account,
-                                  onDeleteSuccess:
-                                      _loadAccounts, // or _loadSections, etc.
-                                  // Optional custom messages:
-                                  // customTitle: 'Custom Delete Title',
-                                  // customMessage: 'Custom delete confirmation message',
+                                  onDeleteSuccess: _loadAccounts,
                                 ),
                               ),
                             ],
@@ -273,24 +260,10 @@ class _AccountsPageState extends State<AccountsPage> {
           CommonAddDialog.showStructureDialog(
             context: context,
             structureType: 'Accounts',
-            availableIcons: availableIcons,
           ).then((_) => _loadAccounts());
         },
         child: const Icon(Icons.add),
       ),
     );
   }
-
-  final List<Map<String, dynamic>> availableIcons = [
-    {'icon': Icons.account_balance, 'label': 'Bank'},
-    {'icon': Icons.account_balance_wallet, 'label': 'Wallet'},
-    {'icon': Icons.credit_card, 'label': 'Card'},
-    {'icon': Icons.savings, 'label': 'Savings'},
-    {'icon': Icons.payment, 'label': 'Payment'},
-    {'icon': Icons.attach_money, 'label': 'Money'},
-    {'icon': Icons.currency_rupee, 'label': 'Rupee'},
-    {'icon': Icons.currency_exchange, 'label': 'Exchange'},
-    {'icon': Icons.account_box, 'label': 'Account'},
-    {'icon': Icons.shopping_bag, 'label': 'Shopping'},
-  ];
 }

@@ -5,6 +5,7 @@ import 'package:expense_tracker/database/structures_crud.dart';
 import 'package:expense_tracker/database/transactions_crud.dart';
 import 'package:expense_tracker/database/models/account_model.dart';
 import 'package:expense_tracker/database/models/struct_model.dart';
+import '../../widgets/customIcons.dart';
 import 'accountdetailspage.dart';
 
 class ScrollableAccountsView extends StatefulWidget {
@@ -115,17 +116,7 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (account.icon != null) ...[
-                            Icon(
-                              IconData(
-                                int.parse(account.icon!),
-                                fontFamily: 'MaterialIcons',
-                              ),
-                              size: 16, // Small icon size
-                              color: account.color != null
-                                  ? Color(int.parse(
-                                      account.color!.replaceFirst('#', '0xFF')))
-                                  : null,
-                            ),
+                            CustomIcons.getIcon(account.icon, size: 25),
                             const SizedBox(width: 8),
                           ],
                           Text(

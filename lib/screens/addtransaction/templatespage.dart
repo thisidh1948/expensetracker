@@ -1,9 +1,9 @@
+import 'package:expense_tracker/widgets/customIcons.dart';
 import 'package:flutter/material.dart';
 
 import '../../database/models/dbtransaction.dart';
 import '../../database/models/template_model.dart';
 import '../../database/templates_crud.dart';
-import '../../widgets/icon_picker_widget.dart';
 import 'add_transaction_page.dart';
 import 'create_templatepage.dart';
 
@@ -156,11 +156,9 @@ class _TemplatesPageState extends State<TemplatesPage> {
                                           ),
                                         ),
                                         child: Center(
-                                          child: Icon(
-                                            CommonIcons.getIcon(template.icon),
-                                            // Using the stored label to get icon
-                                            size: 32,
-                                            color: templateColor,
+                                          child: CustomIcons.getIcon(
+                                            template.icon,
+                                            size: 62,
                                           ),
                                         ),
                                       ),
