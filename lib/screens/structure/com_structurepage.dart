@@ -1,30 +1,31 @@
 import 'package:expense_tracker/widgets/customIcons.dart';
 import 'package:flutter/material.dart';
-
 import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
 import 'common_add_dialog.dart';
 import 'common_delete_dialog.dart';
 
-class SectionsPage extends StatefulWidget {
-  const SectionsPage({Key? key}) : super(key: key);
+class ComStructurePage extends StatefulWidget {
+  final String structureType;
+
+  const ComStructurePage({Key? key, required this.structureType}) : super(key: key);
 
   @override
-  State<SectionsPage> createState() => _SectionsPageState();
+  State<ComStructurePage> createState() => _ComStructurePageState();
 }
 
-class _SectionsPageState extends State<SectionsPage> {
-  late Future<List<StructModel>> _sectionsFuture;
+class _ComStructurePageState extends State<ComStructurePage> {
+  late Future<List<StructModel>> _structuresFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadSections();
+    _loadStructures();
   }
 
-  void _loadSections() {
+  void _loadStructures() {
     setState(() {
-      _sectionsFuture = StructuresCRUD().getAllTableData('Sections');
+      _structuresFuture = StructuresCRUD().getAllTableData(widget.structureType);
     });
   }
 
@@ -32,9 +33,9 @@ class _SectionsPageState extends State<SectionsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Sections',
-          style: TextStyle(
+        title: Text(
+          widget.structureType,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -49,13 +50,13 @@ class _SectionsPageState extends State<SectionsPage> {
             onSelected: (value) {
               switch (value) {
                 case 'sort_name':
-                  // Implement sort by name
+                // Implement sort by name
                   break;
                 case 'sort_date':
-                  // Implement sort by date
+                // Implement sort by date
                   break;
                 case 'refresh':
-                  _loadSections();
+                  _loadStructures();
                   break;
               }
             },
@@ -95,7 +96,7 @@ class _SectionsPageState extends State<SectionsPage> {
         ],
       ),
       body: FutureBuilder<List<StructModel>>(
-        future: _sectionsFuture,
+        future: _structuresFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -118,7 +119,7 @@ class _SectionsPageState extends State<SectionsPage> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: _loadSections,
+                    onPressed: _loadStructures,
                     child: const Text('Retry'),
                   ),
                 ],
@@ -126,9 +127,9 @@ class _SectionsPageState extends State<SectionsPage> {
             );
           }
 
-          final sections = snapshot.data ?? [];
+          final structures = snapshot.data ?? [];
 
-          if (sections.isEmpty) {
+          if (structures.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -140,7 +141,7 @@ class _SectionsPageState extends State<SectionsPage> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'No sections found',
+                    'No data found',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey,
@@ -151,11 +152,11 @@ class _SectionsPageState extends State<SectionsPage> {
                     onPressed: () {
                       CommonAddDialog.showStructureDialog(
                         context: context,
-                        structureType: 'Sections',
-                      ).then((_) => _loadSections());
+                        structureType: widget.structureType,
+                      ).then((_) => _loadStructures());
                     },
                     icon: const Icon(Icons.add),
-                    label: const Text('Add Section'),
+                    label: Text('Add ${widget.structureType}'),
                   ),
                 ],
               ),
@@ -164,16 +165,16 @@ class _SectionsPageState extends State<SectionsPage> {
 
           return RefreshIndicator(
             onRefresh: () async {
-              _loadSections();
+              _loadStructures();
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(8.0),
-              itemCount: sections.length,
+              itemCount: structures.length,
               itemBuilder: (context, index) {
-                final section = sections[index];
-                final Color sectionColor = Color(
+                final structure = structures[index];
+                final Color structureColor = Color(
                   int.parse(
-                      section.color?.replaceFirst('#', '0xFF') ?? 'FF000000'),
+                      structure.color?.replaceFirst('#', '0xFF') ?? 'FF000000'),
                 );
 
                 return Card(
@@ -184,45 +185,45 @@ class _SectionsPageState extends State<SectionsPage> {
                   elevation: 2,
                   child: InkWell(
                     onTap: () {
-                      // Handle section selection/details view
+                      // Handle structure selection/details view
                     },
                     onLongPress: () {
                       CommonAddDialog.showStructureDialog(
                         context: context,
-                        structureType: 'Sections',
-                        existingData: section,
-                      ).then((_) => _loadSections());
+                        structureType: widget.structureType,
+                        existingData: structure,
+                      ).then((_) => _loadStructures());
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: Row(
                         children: [
-                          // Section Icon
+                          // Structure Icon
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: sectionColor.withOpacity(0.1),
+                              color: structureColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: CustomIcons.getIcon(section.icon, size: 24),
+                            child: CustomIcons.getIcon(structure.icon, size: 24),
                           ),
                           const SizedBox(width: 16),
 
-                          // Section Color
+                          // Structure Color
                           Container(
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              color: sectionColor,
+                              color: structureColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                           const SizedBox(width: 16),
 
-                          // Section Name
+                          // Structure Name
                           Expanded(
                             child: Text(
-                              section.name,
+                              structure.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -240,9 +241,9 @@ class _SectionsPageState extends State<SectionsPage> {
                                 onPressed: () {
                                   CommonAddDialog.showStructureDialog(
                                     context: context,
-                                    structureType: 'Sections',
-                                    existingData: section,
-                                  ).then((_) => _loadSections());
+                                    structureType: widget.structureType,
+                                    existingData: structure,
+                                  ).then((_) => _loadStructures());
                                 },
                               ),
                               IconButton(
@@ -250,16 +251,11 @@ class _SectionsPageState extends State<SectionsPage> {
                                 color: Colors.red,
                                 onPressed: () =>
                                     CommonDeleteDialog.showDeleteDialog(
-                                  context: context,
-                                  structureType: 'Sections',
-                                  // or 'Sections', 'Categories', etc.
-                                  item: section,
-                                  onDeleteSuccess:
-                                      _loadSections, // or _loadSections, etc.
-                                  // Optional custom messages:
-                                  // customTitle: 'Custom Delete Title',
-                                  // customMessage: 'Custom delete confirmation message',
-                                ),
+                                      context: context,
+                                      structureType: widget.structureType,
+                                      item: structure,
+                                      onDeleteSuccess: _loadStructures,
+                                    ),
                               ),
                             ],
                           ),
@@ -277,8 +273,8 @@ class _SectionsPageState extends State<SectionsPage> {
         onPressed: () {
           CommonAddDialog.showStructureDialog(
             context: context,
-            structureType: 'Sections',
-          ).then((_) => _loadSections());
+            structureType: widget.structureType,
+          ).then((_) => _loadStructures());
         },
         child: const Icon(Icons.add),
       ),

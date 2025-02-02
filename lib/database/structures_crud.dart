@@ -1,4 +1,5 @@
 import 'database_helper.dart';
+import 'database_tables.dart';
 import 'models/mapping_model.dart';
 import 'models/struct_model.dart';
 
@@ -130,5 +131,49 @@ class StructuresCRUD {
       print('Error in getItemsForSubcategory: $e');
       return [];
     }
+  }
+
+  Future<Map<String, Map<String, String>>> getAllStructureIcons() async {
+    final db = await _db.database;
+    Map<String, Map<String, String>> result = {
+      'accounts': {},
+      'category': {},
+      'subcategory': {},
+      'items': {},
+    };
+
+    // Get icons from accounts table
+    final List<Map<String, dynamic>> accountMaps = await db!.query(
+      Table.accounts,
+      columns: ['name', 'icon'],
+    );
+    result['accounts'] = Map.fromEntries(accountMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    // Get icons from category table
+    final List<Map<String, dynamic>> categoryMaps = await db.query(
+      Table.categories,
+      columns: ['name', 'icon'],
+    );
+    result['category'] = Map.fromEntries(categoryMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    // Get icons from subcategory table
+    final List<Map<String, dynamic>> subcategoryMaps = await db.query(
+      Table.subCategories,
+      columns: ['name', 'icon'],
+    );
+    result['subcategory'] = Map.fromEntries(subcategoryMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    // Get icons from items table
+    final List<Map<String, dynamic>> itemMaps = await db.query(
+      Table.items,
+      columns: ['name', 'icon'],
+    );
+    result['items'] = Map.fromEntries(itemMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    return result;
   }
 }

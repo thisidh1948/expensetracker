@@ -52,7 +52,7 @@ class _MainScreenState extends State<MainScreen> {
     try {
       // Parallel execution of data fetching
       final results = await Future.wait([
-        _transactionCRUD.getAllDataSummary(),
+        _transactionCRUD.getStatsSummary(),
         _transactionCRUD.getMonthlyTransactions(),
       ]);
 
@@ -123,7 +123,7 @@ class _MainScreenState extends State<MainScreen> {
     return Align(
       alignment: Alignment.topRight,
       child: IconButton(
-        icon: const Icon(Icons.more_vert),
+        icon: const Icon(Icons.more_horiz_rounded),
         onPressed: () {
           widget.scaffoldKey?.currentState?.openDrawer();
         },

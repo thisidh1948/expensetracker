@@ -13,7 +13,7 @@ class StatScreen extends StatefulWidget {
 class _StatScreenState extends State<StatScreen> {
   final TransactionCRUD _transactionRepository = TransactionCRUD();
 
-  Summary _summary = Summary(credit: 0.0, debit: 0.0);
+  Summary _summary = Summary(credit: 0.0, debit: 0.0, initialBalance: 0.0);
   List<DbTransaction> _transactions = [];
 
   @override
@@ -24,7 +24,7 @@ class _StatScreenState extends State<StatScreen> {
 
   Future<void> _loadTransactions() async {
     final transactions = await _transactionRepository.getAllTransactions();
-    final Summary summary = await _transactionRepository.getAllDataSummary();
+    final Summary summary = await _transactionRepository.getStatsSummary();
     setState(() {
       _transactions = transactions;
       _summary =  summary;

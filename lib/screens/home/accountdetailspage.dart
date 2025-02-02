@@ -3,6 +3,8 @@ import 'package:expense_tracker/database/models/dbtransaction.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../database/models/summary.dart';
+
 class AccountDetailsPage extends StatefulWidget {
   final String account;
 

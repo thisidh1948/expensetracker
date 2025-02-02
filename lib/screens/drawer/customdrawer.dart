@@ -1,29 +1,19 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui';
-
 import 'package:expense_tracker/screens/drawer/runsqlpage.dart';
 import 'package:expense_tracker/screens/themes/theme.dart';
 import 'package:expense_tracker/services/csv_management_page.dart';
 import 'package:expense_tracker/screens/structure/managetransaction_skeleton.dart';
 import 'package:expense_tracker/screens/themes/themeprovider.dart';
+import 'package:expense_tracker/backup/backup_manager_page.dart';
 
-import '../../backup/backup_manager_page.dart';
-import '../auth/authprovider.dart'; // Make sure this path is correct
+import '../auth/authprovider.dart';
 
 Drawer customDrawer(BuildContext context) {
   return Drawer(
     child: Stack(
       children: [
-        // Blurred background
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            color: Colors.black.withOpacity(0.1), // More transparent background
-          ),
-        ),
-        // Drawer content
         Consumer<AuthProvider>(
           builder: (context, authProvider, child) {
             final user = authProvider.user;
@@ -31,12 +21,12 @@ Drawer customDrawer(BuildContext context) {
             return Column(
               children: [
                 UserAccountsDrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent, // Make header transparent to see the blur effect
+                  decoration: const BoxDecoration(
+                    color: Colors.transparent,
                   ),
                   currentAccountPicture: CircleAvatar(
-                    backgroundImage: user != null && user.photoUrl != null
-                        ? NetworkImage(user.photoUrl!)
+                    backgroundImage: user?.photoUrl != null
+                        ? NetworkImage(user!.photoUrl!)
                         : null,
                     child: user?.photoUrl == null
                         ? const Icon(
@@ -46,107 +36,70 @@ Drawer customDrawer(BuildContext context) {
                         : null,
                   ),
                   accountName: Text(
-                    user != null ? user.displayName ?? 'Guest User' : 'Guest User',
+                    user?.displayName ?? 'Guest User',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.secondary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   accountEmail: Text(
-                    user != null ? user.email : 'Please sign in',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSecondary),
+                    user?.email ?? 'Please sign in',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSecondary),
                   ),
-                  onDetailsPressed: () {
-                    // You can add navigation to a Profile page here if needed
-                  },
+                  onDetailsPressed: () {},
                 ),
                 Expanded(
                   child: ListView(
                     padding: EdgeInsets.zero,
                     children: [
                       // Section: Tools
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16.0, top: 8.0),
-                        child: Text(
-                          'Tools',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                      const SectionTitle(title: 'Tools'),
+                      _buildDrawerListTile(
+                        context,
+                        icon: Icons.code,
+                        title: 'Run SQL',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => RunSQLPage()),
+                        ),
+                      ),
+                      _buildDrawerListTile(
+                        context,
+                        icon: Icons.backup,
+                        title: 'Backup & Restore',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BackupManagerPage(),
                           ),
                         ),
                       ),
-                      ListTile(
-                        leading: Icon(Icons.code, color: Theme.of(context).iconTheme.color),
-                        title: const Text(
-                          'Run SQL',
-                          style: TextStyle(fontWeight: FontWeight.w500),
+                      _buildDrawerListTile(
+                        context,
+                        icon: Icons.data_usage,
+                        title: 'Data Management',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CSVManagementPage(),
+                          ),
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => RunSQLPage()),
-                          );
-                        },
                       ),
-                      ListTile(
-                        leading: Icon(Icons.backup, color: Theme.of(context).iconTheme.color),
-                        title: const Text(
-                          'Backup & Restore',
-                          style: TextStyle(fontWeight: FontWeight.w500),
+                      _buildDrawerListTile(
+                        context,
+                        icon: Icons.architecture,
+                        title: 'Skeleton',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ManageTransactionSkeleton(),
+                          ),
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BackupManagerPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.data_usage, color: Theme.of(context).iconTheme.color),
-                        title: const Text(
-                          'Data Management',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CSVManagementPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.architecture, color: Theme.of(context).iconTheme.color),
-                        title: const Text(
-                          'Skeleton',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ManageTransactionSkeleton(),
-                            ),
-                          );
-                        },
                       ),
                       const Divider(),
                       // Section: Settings
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16.0, top: 8.0),
-                        child: Text(
-                          'Settings',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
+                      const SectionTitle(title: 'Settings'),
                       Consumer<ThemeProvider>(
                         builder: (context, themeProvider, _) => SwitchListTile(
                           secondary: Icon(
@@ -169,48 +122,11 @@ Drawer customDrawer(BuildContext context) {
                           },
                         ),
                       ),
-                      // Authentication Section
-                      authProvider.isSignedIn
-                          ? ListTile(
-                        leading: Icon(Icons.logout, color: Theme.of(context).iconTheme.color),
-                        title: const Text(
-                          'Logout',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        onTap: () async {
-                          await authProvider.signOut();
-                          Navigator.of(context).pop(); // Close the drawer
-                          // Optionally, show a confirmation message
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Logged out successfully')),
-                          );
-                        },
-                      )
-                          : ListTile(
-                        leading: Icon(Icons.login, color: Theme.of(context).iconTheme.color),
-                        title: const Text(
-                          'Sign In',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        onTap: () async {
-                          await authProvider.signIn();
-                          if (authProvider.isSignedIn) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Signed in successfully')),
-                            );
-                          } else if (authProvider.errorMessage != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(authProvider.errorMessage!)),
-                            );
-                          }
-                          Navigator.of(context).pop(); // Close the drawer
-                        },
-                      ),
+                      _buildAuthTile(context, authProvider),
                     ],
                   ),
                 ),
-                // Version info at bottom
-                Container(
+                Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     'Version 1.0.0',
@@ -227,4 +143,79 @@ Drawer customDrawer(BuildContext context) {
       ],
     ),
   );
+}
+
+Widget _buildDrawerListTile(BuildContext context,
+    {required IconData icon,
+      required String title,
+      required VoidCallback onTap}) {
+  return ListTile(
+    leading: Icon(icon, color: Theme.of(context).iconTheme.color),
+    title: Text(
+      title,
+      style: const TextStyle(fontWeight: FontWeight.w500),
+    ),
+    onTap: onTap,
+  );
+}
+
+Widget _buildAuthTile(BuildContext context, AuthProvider authProvider) {
+  return authProvider.isSignedIn
+      ? ListTile(
+    leading:
+    Icon(Icons.logout, color: Theme.of(context).iconTheme.color),
+    title: const Text(
+      'Logout',
+      style: TextStyle(fontWeight: FontWeight.w500),
+    ),
+    onTap: () async {
+      await authProvider.signOut();
+      Navigator.of(context).pop(); // Close the drawer
+      // Optionally, show a confirmation message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logged out successfully')),
+      );
+    },
+  )
+      : ListTile(
+    leading: Icon(Icons.login, color: Theme.of(context).iconTheme.color),
+    title: const Text(
+      'Sign In',
+      style: TextStyle(fontWeight: FontWeight.w500),
+    ),
+    onTap: () async {
+      await authProvider.signIn();
+      if (authProvider.isSignedIn) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signed in successfully')),
+        );
+      } else if (authProvider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage!)),
+        );
+      }
+      Navigator.of(context).pop(); // Close the drawer
+    },
+  );
+}
+
+class SectionTitle extends StatelessWidget {
+  final String title;
+
+  const SectionTitle({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
 }

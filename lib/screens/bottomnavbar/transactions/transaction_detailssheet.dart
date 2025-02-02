@@ -1,14 +1,16 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../database/models/dbtransaction.dart';
+import '../../../widgets/customIcons.dart';
 
 class TransactionDetailsSheet extends StatelessWidget {
   final DbTransaction transaction;
+  final Map<String, Map<String, String>> structureIcons;
 
   const TransactionDetailsSheet({
     Key? key,
     required this.transaction,
+    required this.structureIcons,
   }) : super(key: key);
 
   @override
@@ -28,8 +30,8 @@ class TransactionDetailsSheet extends StatelessWidget {
           _buildDetailRow('Account', transaction.account),
           if (transaction.section != null)
             _buildDetailRow('Section', transaction.section!),
-          _buildDetailRow('Category', transaction.category),
-          _buildDetailRow('Subcategory', transaction.subcategory),
+          _buildDetailRowWithIcon('Category', transaction.category, structureIcons['category']?[transaction.category]),
+          _buildDetailRowWithIcon('Subcategory', transaction.subcategory, structureIcons['subcategory']?[transaction.subcategory]),
           if (transaction.item != null)
             _buildDetailRow('Item', transaction.item!),
           _buildDetailRow('Type', transaction.cd ? 'Credit' : 'Debit'),
@@ -63,6 +65,32 @@ class TransactionDetailsSheet extends StatelessWidget {
               ),
             ),
           ),
+          Expanded(
+            child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRowWithIcon(String label, String value, String? iconLabel) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          if (iconLabel != null) CustomIcons.getIcon(iconLabel, size: 24.0),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(value),
           ),

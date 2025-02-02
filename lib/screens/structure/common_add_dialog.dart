@@ -1,5 +1,7 @@
+import 'package:expense_tracker/database/models/appdata.dart';
 import 'package:flutter/material.dart';
 
+import '../../database/appdata_crud.dart';
 import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
 import '../../widgets/color_picker_widget.dart';
@@ -170,8 +172,7 @@ class CommonAddDialog {
 
                                   if (structureType == 'Accounts' &&
                                       balanceController.text.isNotEmpty) {
-                                    // Handle account balance if needed
-                                    // Add your account balance logic here
+                                     AppDataCrud().insert(new AppData(category: "AB", key: nameController.text.trim(), value:balanceController.text));
                                   }
                                 }
 

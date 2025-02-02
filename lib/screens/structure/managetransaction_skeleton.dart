@@ -1,11 +1,11 @@
-import 'package:expense_tracker/screens/structure/sectionspage.dart';
+import 'package:expense_tracker/screens/structure/com_structurepage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
  // Add this import
 
 import '../../database/database_helper.dart';
-import 'accountspage.dart';
 import 'categoriespage.dart';
+import '../../database/database_tables.dart';
 
 class ManageTransactionSkeleton extends StatelessWidget {
   const ManageTransactionSkeleton({Key? key}) : super(key: key);
@@ -68,17 +68,17 @@ class ManageTransactionSkeleton extends StatelessWidget {
               Icons.account_balance,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AccountsPage()),
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Sections')),
               ),
             ),
             const SizedBox(height: 16),
             _buildNavigationButton(
               context,
               'Sections',
-              Icons.access_alarms,
-              () => Navigator.push(
+                Icons.account_circle_rounded,
+                  () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SectionsPage()),
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Sections')),
               ),
             ),
             const SizedBox(height: 16),
@@ -89,6 +89,26 @@ class ManageTransactionSkeleton extends StatelessWidget {
               () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CategoriesPage()),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildNavigationButton(
+              context,
+              'SubCategories',
+              Icons.subject_rounded,
+                  () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'SubCategories')),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildNavigationButton(
+              context,
+              'Items',
+              Icons.add,
+                  () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Items')),
               ),
             ),
             const SizedBox(height: 16),

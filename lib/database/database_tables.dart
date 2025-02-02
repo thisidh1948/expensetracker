@@ -103,3 +103,16 @@ class DatabaseTables {
     )
   ''';
 }
+
+class Table {
+  static const String alldata = "Alldata";
+  static const String accounts = "Accounts";
+  static const String appData = "AppData";
+  static const String sections = "Sections";
+  static const String categories = "Categories";
+  static const String subCategories = "SubCategories";
+  static const String items = "Items";
+  static const String subcategoriesForCategory = "SubcategoriesForCategory";
+  static const String itemsForSubcategory = "ItemsForSubcategory";
+  static const String templates = "Templates";
+}

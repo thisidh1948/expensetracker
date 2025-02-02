@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../../database/models/dbtransaction.dart';
 import 'month_selector.dart';
+import 'package:expense_tracker/database/structures_crud.dart';
 
 class TransactionPage extends StatefulWidget {
   const TransactionPage({Key? key}) : super(key: key);
@@ -21,23 +22,34 @@ class _TransactionPageState extends State<TransactionPage> {
   List<DbTransaction> transactions = [];
   bool _isLoading = false;
   final TransactionCRUD _transactionCRUD = TransactionCRUD();
+  final StructuresCRUD _structuresCRUD = StructuresCRUD();
+  Map<String, Map<String, String>> structureIcons = {};
+  int _currentPage = 1000;
 
   @override
   void initState() {
     super.initState();
     _loadTransactions();
+    _loadStructureIcons();
+  }
+
+  Future<void> _loadStructureIcons() async {
+    final icons = await _structuresCRUD.getAllStructureIcons();
+    setState(() {
+      structureIcons = icons;
+    });
   }
 
   Future<void> _loadTransactions() async {
     setState(() => _isLoading = true);
     try {
       final DateTime firstDay =
-          DateTime(_currentDate.year, _currentDate.month, 1);
+      DateTime(_currentDate.year, _currentDate.month, 1);
       final DateTime lastDay =
-          DateTime(_currentDate.year, _currentDate.month + 1, 0);
+      DateTime(_currentDate.year, _currentDate.month + 1, 0);
 
       final List<DbTransaction> loadedTransactions =
-          await _transactionCRUD.getTransactionsByDateRange(
+      await _transactionCRUD.getTransactionsByDateRange(
         firstDay,
         lastDay,
       );
@@ -53,7 +65,7 @@ class _TransactionPageState extends State<TransactionPage> {
     }
   }
 
-void _showTransactionDetails(DbTransaction transaction) {
+  void _showTransactionDetails(DbTransaction transaction) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -65,10 +77,11 @@ void _showTransactionDetails(DbTransaction transaction) {
         onTap: () => Navigator.pop(context),
         child: TransactionDetailsSheet(
           transaction: transaction,
+          structureIcons: structureIcons,
         ),
       ),
     );
-}
+  }
 
 
 
@@ -108,30 +121,52 @@ void _showTransactionDetails(DbTransaction transaction) {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          MonthSelector(
-            selectedDate: _currentDate,
-            onMonthSelected: (DateTime date) {
-              setState(() {
-                _currentDate = date;
-              });
-              _loadTransactions();
-            },
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : TransactionListView(
-                    transactions: transactions,
-                    isLoading: _isLoading,
-                    onTapTransaction: _showTransactionDetails,
-                    onLongPressTransaction: _editTransaction,
-                  ),
-          ),
-        ],
+      body: PageView.builder(
+        controller: PageController(initialPage: 1000), // Start from a large number to allow infinite scrolling
+        onPageChanged: (page) {
+          _changeMonth(page - _currentPage);
+          _currentPage = page;
+        },
+        itemBuilder: (context, page) {
+          return Column(
+            children: [
+              MonthSelector(
+                selectedDate: _currentDate,
+                onMonthSelected: (DateTime date) {
+                  setState(() {
+                    _currentDate = date;
+                  });
+                  _loadTransactions();
+                },
+              ),
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : TransactionListView(
+                  transactions: transactions,
+                  isLoading: _isLoading,
+                  onTapTransaction: _showTransactionDetails,
+                  onLongPressTransaction: _editTransaction,
+                  structureIcons: structureIcons,
+                ),
+              ),
+            ],
+          );
+        },
       ),
+
     );
+  }
+
+  void _changeMonth(int months) {
+    setState(() {
+      _currentDate = DateTime(
+        _currentDate.year,
+        _currentDate.month + months,
+        _currentDate.day,
+      );
+    });
+    _loadTransactions();
   }
 
   @override

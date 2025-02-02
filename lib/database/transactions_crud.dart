@@ -24,7 +24,8 @@ class TransactionCRUD {
 
   Future<void> update(DbTransaction transaction) async {
     final db = await _databaseHelper.database;
-    print('Saving transaction with cd 456256442 value: {}' + transaction.cd.toString());
+    print('Saving transaction with cd 456256442 value: {}' +
+        transaction.cd.toString());
     await db!.update(
       'Alldata',
       transaction.toMap(),
@@ -48,12 +49,31 @@ class TransactionCRUD {
     return List.generate(maps.length, (i) => DbTransaction.fromMap(maps[i]));
   }
 
-  Future<Summary> getAllDataSummary() async {
+  Future<Summary> getDataByAccount(String accountName) async {
     final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> credits = await db!.rawQuery(
-        'SELECT COALESCE(SUM(amount), 0) as total FROM Alldata WHERE cd = 1');
-    final List<Map<String, dynamic>> debits = await db.rawQuery(
-        'SELECT COALESCE(SUM(amount), 0) as total FROM Alldata WHERE cd = 0');
+
+    // Get initial balance
+    final List<Map<String, dynamic>> balanceResult = await db!.rawQuery(
+        '''SELECT value FROM AppData WHERE category ='AB' and key = ?''',
+        [accountName]);
+    final double initialBalance = balanceResult.isNotEmpty
+        ? double.tryParse(balanceResult.first['value'].toString()) ?? 0.0
+        : 0.0;
+
+    // Get credits and debits for the account
+    final List<Map<String, dynamic>> credits =
+        await db.rawQuery('''SELECT COALESCE(SUM(amount), 0) as total 
+       FROM Alldata 
+       WHERE cd = 1 
+       AND account = ? 
+       AND category NOT IN ('SELF TRANSFER')''', [accountName]);
+
+    final List<Map<String, dynamic>> debits =
+        await db.rawQuery('''SELECT COALESCE(SUM(amount), 0) as total 
+       FROM Alldata 
+       WHERE cd = 0 
+       AND account = ? 
+       AND category NOT IN ('SELF TRANSFER')''', [accountName]);
 
     final double totalCredit = credits.first['total']?.toDouble() ?? 0.0;
     final double totalDebit = debits.first['total']?.toDouble() ?? 0.0;
@@ -61,6 +81,24 @@ class TransactionCRUD {
     return Summary(
       credit: totalCredit,
       debit: totalDebit,
+      initialBalance: initialBalance,
+    );
+  }
+
+  Future<Summary> getStatsSummary() async {
+    final db = await _databaseHelper.database;
+    final List<Map<String, dynamic>> credits = await db!.rawQuery(
+        'SELECT COALESCE(SUM(amount), 0) as total FROM Alldata WHERE cd = 1 AND category != \'SELF TRANSFER\'');
+    final List<Map<String, dynamic>> debits = await db.rawQuery(
+        'SELECT COALESCE(SUM(amount), 0) as total FROM Alldata WHERE cd = 0 AND category != \'SELF TRANSFER\'');
+
+    final double totalCredit = credits.first['total']?.toDouble() ?? 0.0;
+    final double totalDebit = debits.first['total']?.toDouble() ?? 0.0;
+
+    return Summary(
+      credit: totalCredit,
+      debit: totalDebit,
+      initialBalance: 0.0
     );
   }
 
@@ -69,8 +107,7 @@ class TransactionCRUD {
     dynamic columnValue,
     DateTime? startDate,
     DateTime? endDate,
-  }) async
-  {
+  }) async {
     final db = await _databaseHelper.database;
 
     final List<String> whereConditions = [];
@@ -110,6 +147,7 @@ class TransactionCRUD {
     double totalDebit = 0.0;
 
     for (var transaction in transactions) {
+      if (transaction.category == 'SELF TRANSFER') continue;
       if (transaction.cd == '1') {
         // true for credit
         totalCredit += transaction.amount;
@@ -138,40 +176,20 @@ class TransactionCRUD {
     final double totalCredit = result.first['credits']?.toDouble() ?? 0.0;
     final double totalDebit = result.first['debits']?.toDouble() ?? 0.0;
 
-    return totalCredit - totalDebit;
-  }
+    final List<Map<String, dynamic>> ib = await db.rawQuery(
+        '''SELECT value FROM AppData WHERE category ='AB' and key = ?''',
+        [accountName]);
+    final double initialBalance = ib.isNotEmpty
+        ? double.tryParse(ib.first['value'].toString()) ?? 0.0
+        : 0.0;
 
-  Future<Summary> getSelectBalance(
-      String columnName, dynamic columnValue) async {
-    final db = await _databaseHelper.database;
-
-    // Calculate total credit
-    final List<Map<String, dynamic>> credits = await db!.rawQuery('''
-      SELECT COALESCE(SUM(amount), 0) as total 
-      FROM Alldata 
-      WHERE $columnName = ? AND cd = 1
-      ''', [columnValue]);
-
-    // Calculate total debit
-    final List<Map<String, dynamic>> debits = await db.rawQuery('''
-      SELECT COALESCE(SUM(amount), 0) as total 
-      FROM Alldata 
-      WHERE $columnName = ? AND cd = 0
-      ''', [columnValue]);
-
-    final double totalCredit = credits.first['total']?.toDouble() ?? 0.0;
-    final double totalDebit = debits.first['total']?.toDouble() ?? 0.0;
-
-    return Summary(
-      credit: totalCredit,
-      debit: totalDebit,
-    );
+    return initialBalance + totalCredit - totalDebit;
   }
 
   Future<List<MonthlyData>> getMonthlyTransactions() async {
-  final db = await _databaseHelper.database;
+    final db = await _databaseHelper.database;
 
-  final List<Map<String, dynamic>> result = await db!.rawQuery('''
+    final List<Map<String, dynamic>> result = await db!.rawQuery('''
     WITH RECURSIVE dates(date) AS (
       SELECT date('now', 'start of month', '-5 months')
       UNION ALL
@@ -181,8 +199,8 @@ class TransactionCRUD {
     )
     SELECT 
       strftime('%Y-%m', dates.date) as month,
-      COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as credits,
-      COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as debits
+      COALESCE(SUM(CASE WHEN cd = 1 AND category NOT IN ('SELF TRANSFER') THEN amount ELSE 0 END), 0) as credits,
+      COALESCE(SUM(CASE WHEN cd = 0 AND category NOT IN ('SELF TRANSFER') THEN amount ELSE 0 END), 0) as debits
     FROM dates
     LEFT JOIN Alldata ON strftime('%Y-%m', Alldata.date) = strftime('%Y-%m', dates.date)
     GROUP BY month
@@ -190,30 +208,73 @@ class TransactionCRUD {
     LIMIT 6
   ''');
 
-  return List.generate(result.length, (i) {
-    final String month = result[i]['month'];
-    final double totalCredit = result[i]['credits']?.toDouble() ?? 0.0;
-    final double totalDebit = result[i]['debits']?.toDouble() ?? 0.0;
+    return List.generate(result.length, (i) {
+      final String month = result[i]['month'];
+      final double totalCredit = result[i]['credits']?.toDouble() ?? 0.0;
+      final double totalDebit = result[i]['debits']?.toDouble() ?? 0.0;
 
-    return MonthlyData(
-      month: month, // Using the previously created method
-      income: totalCredit,
-      expense: totalDebit,
-    );
-  });
-}
-
- Future<List<DbTransaction>> getTransactionsByDateRange(DateTime startDate, DateTime endDate) async {
-  final db = await _databaseHelper.database;
-
-  final List<Map<String, dynamic>> maps = await db!.query(
-    'Alldata',
-    where: 'date BETWEEN ? AND ?',
-    whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
-  );
-
-  return List.generate(maps.length, (i) => DbTransaction.fromMap(maps[i]));
+      return MonthlyData(
+        month: month, // Using the previously created method
+        income: totalCredit,
+        expense: totalDebit,
+      );
+    });
   }
 
+  Future<List<DbTransaction>> getTransactionsByDateRange(
+      DateTime startDate, DateTime endDate) async {
+    final db = await _databaseHelper.database;
 
+    final List<Map<String, dynamic>> maps = await db!.query(
+      'Alldata',
+      where: 'date BETWEEN ? AND ?',
+      whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
+    );
+
+    return List.generate(maps.length, (i) => DbTransaction.fromMap(maps[i]));
+  }
+
+  Future<Map<String, Map<String, String>>> getAllStructureIcons() async {
+    final db = await _databaseHelper.database;
+    Map<String, Map<String, String>> result = {
+      'accounts': {},
+      'category': {},
+      'subcategory': {},
+      'items': {},
+    };
+
+    // Get icons from accounts table
+    final List<Map<String, dynamic>> accountMaps = await db!.query(
+      'accounts',
+      columns: ['name', 'icon'],
+    );
+    result['accounts'] = Map.fromEntries(accountMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    // Get icons from category table
+    final List<Map<String, dynamic>> categoryMaps = await db.query(
+      'category',
+      columns: ['name', 'icon'],
+    );
+    result['category'] = Map.fromEntries(categoryMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    // Get icons from subcategory table
+    final List<Map<String, dynamic>> subcategoryMaps = await db.query(
+      'subcategory',
+      columns: ['name', 'icon'],
+    );
+    result['subcategory'] = Map.fromEntries(subcategoryMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    // Get icons from items table
+    final List<Map<String, dynamic>> itemMaps = await db.query(
+      'items',
+      columns: ['name', 'icon'],
+    );
+    result['items'] = Map.fromEntries(itemMaps
+        .map((map) => MapEntry(map['name'] as String, map['icon'] as String)));
+
+    return result;
+  }
 }

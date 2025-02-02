@@ -8,10 +8,7 @@ import 'addpage_mapping.dart';
 class ItemsPage extends StatefulWidget {
   final String subcategory;
 
-  const ItemsPage({
-    Key? key,
-    required this.subcategory,
-  }) : super(key: key);
+  const ItemsPage({Key? key, required this.subcategory}) : super(key: key);
 
   @override
   State<ItemsPage> createState() => _ItemsPageState();
@@ -28,7 +25,8 @@ class _ItemsPageState extends State<ItemsPage> {
 
   void _refreshItems() {
     setState(() {
-      _itemsFuture = StructuresCRUD().getItemsForSubcategory(widget.subcategory);
+      _itemsFuture =
+          StructuresCRUD().getItemsForSubcategory(widget.subcategory);
     });
   }
 
@@ -38,183 +36,118 @@ class _ItemsPageState extends State<ItemsPage> {
       appBar: AppBar(
         title: Text('Items - ${widget.subcategory}'),
       ),
-      body: FutureBuilder<List<MappingModel>>(
-        future: _itemsFuture,
-        builder: (context, mappingSnapshot) {
-          if (mappingSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+      body: RefreshIndicator(
+        onRefresh: () async => _refreshItems(),
+        child: FutureBuilder<List<MappingModel>>(
+          future: _itemsFuture,
+          builder: (context, mappingSnapshot) {
+            if (mappingSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (mappingSnapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.red,
-                    size: 60,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error: ${mappingSnapshot.error}',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _refreshItems,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
+            final mappings = mappingSnapshot.data ?? [];
 
-          final items = mappingSnapshot.data ?? [];
+            return FutureBuilder<List<StructModel>>(
+              future: StructuresCRUD().getAllTableData('Items'),
+              builder: (context, itemsSnapshot) {
+                if (itemsSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (items.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.inventory,
-                    size: 60,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No items found',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
+                final itemStructures = itemsSnapshot.data ?? [];
+                final filteredItems = itemStructures
+                    .where((item) => mappings.any((m) => m.child == item.name))
+                    .toList();
+
+                if (filteredItems.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.inventory,
+                            size: 60, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No items found for this subcategory',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => _showAddItemSheet(),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Item'),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      BottomSheetUtils.showStructureBottomSheet(
-                        context: context,
-                        title: 'Select Item',
-                        structureType: 'Items',
-                        parentType: 'Subcategories',
-                        parentName: widget.subcategory,
-                        availableIcons: const [],
-                        onRefresh: _refreshItems,
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Item'),
-                  ),
-                ],
-              ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredItems[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        leading: CustomIcons.getIcon(item.icon, size: 24),
+                        title: Text(item.name),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          color: Colors.red,
+                          onPressed: () => _confirmDelete(item.name),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              _refreshItems();
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: FutureBuilder<List<StructModel>>(
-                      future: StructuresCRUD().getAllTableData('Items'),
-                      builder: (context, itemsSnapshot) {
-                        if (itemsSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        final itemStructures = itemsSnapshot.data ?? [];
-
-                        return ListView.builder(
-                          itemCount: itemStructures.length,
-                          itemBuilder: (context, index) {
-                            final item = itemStructures[index];
-                            final Color itemColor = item.color != null
-                                ? Color(int.parse(
-                                    item.color!.replaceFirst('#', '0xFF')))
-                                : Theme.of(context).primaryColor;
-
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              child: ListTile(
-                                leading: CustomIcons.getIcon(
-                                  item.icon,
-                                  size: 24,
-                                ),
-                                title: Text(item.name),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  color: Colors.red,
-                                  onPressed: () async {
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text('Confirm Deletion'),
-                                        content: Text(
-                                            'Are you sure you want to remove ${item.name}?'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text('Delete'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-
-                                    if (confirm == true) {
-                                      await StructuresCRUD()
-                                          .deleteItemForSubcategory(
-                                        widget.subcategory,
-                                        item.name,
-                                      );
-                                      _refreshItems();
-                                    }
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          BottomSheetUtils.showStructureBottomSheet(
-            context: context,
-            title: 'Select Item',
-            structureType: 'Items',
-            parentType: 'Subcategories',
-            parentName: widget.subcategory,
-            availableIcons: const [],
-            onRefresh: _refreshItems,
-          );
-        },
+        onPressed: _showAddItemSheet,
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Future<void> _confirmDelete(String itemName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Deletion'),
+        content: Text('Are you sure you want to remove $itemName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await StructuresCRUD()
+          .deleteItemForSubcategory(widget.subcategory, itemName);
+      _refreshItems();
+    }
+  }
+
+  void _showAddItemSheet() {
+    BottomSheetUtils.showStructureBottomSheet(
+      context: context,
+      title: 'Select Item',
+      structureType: 'Items',
+      parentType: 'Subcategories',
+      parentName: widget.subcategory,
+      availableIcons: const [],
+      onRefresh: _refreshItems,
     );
   }
 }

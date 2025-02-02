@@ -1,15 +1,15 @@
-import 'package:expense_tracker/screens/bottomnavbar/transactions/transaction_list_tile.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import '../../../database/models/dbtransaction.dart';
+import 'transaction_list_tile.dart';
 
 class TransactionListView extends StatelessWidget {
   final List<DbTransaction> transactions;
   final bool isLoading;
   final Function(DbTransaction) onTapTransaction;
   final Function(DbTransaction) onLongPressTransaction;
+  final Map<String, Map<String, String>> structureIcons;
 
   const TransactionListView({
     Key? key,
@@ -17,6 +17,7 @@ class TransactionListView extends StatelessWidget {
     required this.isLoading,
     required this.onTapTransaction,
     required this.onLongPressTransaction,
+    required this.structureIcons,
   }) : super(key: key);
 
   @override
@@ -58,8 +59,7 @@ class TransactionListView extends StatelessWidget {
         DateFormat('dd MMMM yyyy').format(transaction.date!);
 
         if (index > 0) {
-          previousDate =
-              DateFormat('dd MMMM yyyy').format(transactions[index - 1].date!);
+          previousDate = DateFormat('dd MMMM yyyy').format(transactions[index - 1].date!);
         }
 
         final bool showDateHeader = index == 0 || previousDate != currentDate;
@@ -89,6 +89,7 @@ class TransactionListView extends StatelessWidget {
                 transaction: transaction,
                 onTap: () => onTapTransaction(transaction),
                 onLongPress: () => onLongPressTransaction(transaction),
+                structureIcons: structureIcons,
               ),
             ),
           ],
