@@ -13,7 +13,8 @@ class MyApp extends StatelessWidget {
     return Consumer2<AuthProvider, ThemeProvider>(
       builder: (context, authProvider, themeProvider, child) {
         return MaterialApp(
-          title: 'Expense Manager',
+          debugShowCheckedModeBanner: false,
+          title: 'logger',
           theme: themeProvider.getTheme(),
           home: authProvider.isSignedIn ? HomeScreen() : SignInPage(),
         );

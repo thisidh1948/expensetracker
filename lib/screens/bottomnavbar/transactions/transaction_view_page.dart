@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../database/models/dbtransaction.dart';
+import '../../utils/transaction_utils.dart';
 import 'month_selector.dart';
 import 'package:expense_tracker/database/structures_crud.dart';
 
@@ -65,43 +66,6 @@ class _TransactionPageState extends State<TransactionPage> {
     }
   }
 
-  void _showTransactionDetails(DbTransaction transaction) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).cardColor, // or any specific color you want
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: TransactionDetailsSheet(
-          transaction: transaction,
-          structureIcons: structureIcons,
-        ),
-      ),
-    );
-  }
-
-
-
-  void _editTransaction(DbTransaction transaction) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddTransactionPage(
-          transaction: transaction, isUpdate: true, // Pass the transaction for editing
-        ),
-      ),
-    ).then((result) {
-      // Refresh the transactions list when returning from edit page
-      if (result == true) {
-        _loadTransactions(); // Reload transactions if changes were made
-      }
-    });
-
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,8 +109,16 @@ class _TransactionPageState extends State<TransactionPage> {
                     : TransactionListView(
                   transactions: transactions,
                   isLoading: _isLoading,
-                  onTapTransaction: _showTransactionDetails,
-                  onLongPressTransaction: _editTransaction,
+                  onTapTransaction: (transaction) => TransactionUtils.showTransactionDetails(
+                    context,
+                    transaction,
+                    structureIcons,
+                  ),
+                  onLongPressTransaction: (transaction) => TransactionUtils.editTransaction(
+                      context,
+                      transaction,
+                      onRefresh: _loadTransactions
+                  ),
                   structureIcons: structureIcons,
                 ),
               ),

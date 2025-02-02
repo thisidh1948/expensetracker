@@ -68,7 +68,7 @@ class ManageTransactionSkeleton extends StatelessWidget {
               Icons.account_balance,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Sections')),
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Accounts')),
               ),
             ),
             const SizedBox(height: 16),

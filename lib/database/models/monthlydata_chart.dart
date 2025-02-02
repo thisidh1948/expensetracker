@@ -1,4 +1,4 @@
-class MonthlyData {
+class   MonthlyData {
   final String month;
   final double income;
   final double expense;

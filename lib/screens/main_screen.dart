@@ -21,7 +21,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final _transactionCRUD = TransactionCRUD();
-  double _totalBalance = 0.0;
+  String  _totalBalance = "0.0";
   bool _isLoading = false;
   List<MonthlyData> _monthlyData = [];
   String _errorMessage = '';
@@ -52,14 +52,15 @@ class _MainScreenState extends State<MainScreen> {
     try {
       // Parallel execution of data fetching
       final results = await Future.wait([
-        _transactionCRUD.getStatsSummary(),
+        _transactionCRUD.getTotalBalance(),
         _transactionCRUD.getMonthlyTransactions(),
       ]);
+      final String tb = await _transactionCRUD.getTotalBalance();
 
       if (!mounted) return;
 
       setState(() {
-        _totalBalance = (results[0] as Summary).balance;
+        _totalBalance = tb;
         _monthlyData = results[1] as List<MonthlyData>;
       });
     } catch (e) {
@@ -153,7 +154,7 @@ class _MainScreenState extends State<MainScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(
-                    _totalBalance.toStringAsFixed(2),
+                    _totalBalance,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),

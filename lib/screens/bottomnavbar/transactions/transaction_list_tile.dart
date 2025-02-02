@@ -26,18 +26,13 @@ class TransactionListTile extends StatelessWidget {
             ? Colors.green.withOpacity(0.1)
             : Colors.red.withOpacity(0.1),
         child: CustomIcons.getIcon(
-          structureIcons['category']?[transaction.category] ?? 'amazon',
+          structureIcons['Items']?[transaction.item] ?? 'amazon',
           size: 28.0,
         ),
       ),
       title: Row(
         children: [
-          Text(
-            transaction.item ?? transaction.subcategory ?? transaction.category,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(width: 8.0),
-          if (transaction.subcategory != null && structureIcons['subcategory']?[transaction.subcategory] != null)
+          if (structureIcons['subcategory']?[transaction.subcategory] != null)
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: CustomIcons.getIcon(
@@ -45,11 +40,11 @@ class TransactionListTile extends StatelessWidget {
                 size: 20.0,
               ),
             ),
-          if (structureIcons['category']?[transaction.category] != null)
-            CustomIcons.getIcon(
-              structureIcons['category']![transaction.category]!,
-              size: 20.0,
-            ),
+          const SizedBox(width: 8.0),
+          Text(
+            transaction.item ?? transaction.subcategory ?? transaction.category,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
         ],
       ),
       subtitle: Text(

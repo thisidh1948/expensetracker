@@ -6,7 +6,7 @@ import 'package:expense_tracker/database/transactions_crud.dart';
 import 'package:expense_tracker/database/models/account_model.dart';
 import 'package:expense_tracker/database/models/struct_model.dart';
 import '../../widgets/customIcons.dart';
-import 'accountdetailspage.dart';
+import 'details_page.dart';
 
 class ScrollableAccountsView extends StatefulWidget {
   const ScrollableAccountsView({Key? key}) : super(key: key);
@@ -101,7 +101,7 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        AccountDetailsPage(account: account.name),
+                        DetailsPage(structureType: 'Accounts', name: account.name),
                   ),
                 ).then((_) => _loadAccounts());
               },

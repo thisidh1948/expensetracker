@@ -49,40 +49,39 @@ class TransactionCRUD {
     return List.generate(maps.length, (i) => DbTransaction.fromMap(maps[i]));
   }
 
-  Future<Summary> getDataByAccount(String accountName) async {
+  Future<String> getTotalBalance() async {
     final db = await _databaseHelper.database;
+    try {
+      // Get initial balance from AppData
+      final List<Map<String, dynamic>> initialBalanceResult = await db!
+          .rawQuery('''SELECT COALESCE(SUM(CAST(value AS DECIMAL)), 0) as total 
+         FROM AppData 
+         WHERE category = 'AB' ''');
+      final double initialBalance =
+          initialBalanceResult.first['total']?.toDouble() ?? 0.0;
 
-    // Get initial balance
-    final List<Map<String, dynamic>> balanceResult = await db!.rawQuery(
-        '''SELECT value FROM AppData WHERE category ='AB' and key = ?''',
-        [accountName]);
-    final double initialBalance = balanceResult.isNotEmpty
-        ? double.tryParse(balanceResult.first['value'].toString()) ?? 0.0
-        : 0.0;
+      // Get total credits and debits from Alldata
+      final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT 
+        COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as total_credit,
+        COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as total_debit
+      FROM Alldata
+      WHERE category NOT IN ('SELF TRANSFER')
+    ''');
 
-    // Get credits and debits for the account
-    final List<Map<String, dynamic>> credits =
-        await db.rawQuery('''SELECT COALESCE(SUM(amount), 0) as total 
-       FROM Alldata 
-       WHERE cd = 1 
-       AND account = ? 
-       AND category NOT IN ('SELF TRANSFER')''', [accountName]);
+      final double totalCredit =
+          result.first['total_credit']?.toDouble() ?? 0.0;
+      final double totalDebit = result.first['total_debit']?.toDouble() ?? 0.0;
 
-    final List<Map<String, dynamic>> debits =
-        await db.rawQuery('''SELECT COALESCE(SUM(amount), 0) as total 
-       FROM Alldata 
-       WHERE cd = 0 
-       AND account = ? 
-       AND category NOT IN ('SELF TRANSFER')''', [accountName]);
+      // Calculate final balance
+      final double totalBalance = initialBalance + totalCredit - totalDebit;
 
-    final double totalCredit = credits.first['total']?.toDouble() ?? 0.0;
-    final double totalDebit = debits.first['total']?.toDouble() ?? 0.0;
-
-    return Summary(
-      credit: totalCredit,
-      debit: totalDebit,
-      initialBalance: initialBalance,
-    );
+      // Format and return the balance
+      return '₹${totalBalance.toStringAsFixed(2)}';
+    } catch (e) {
+      print('Error calculating total balance: $e');
+      return '₹0.00';
+    }
   }
 
   Future<Summary> getStatsSummary() async {
@@ -95,11 +94,7 @@ class TransactionCRUD {
     final double totalCredit = credits.first['total']?.toDouble() ?? 0.0;
     final double totalDebit = debits.first['total']?.toDouble() ?? 0.0;
 
-    return Summary(
-      credit: totalCredit,
-      debit: totalDebit,
-      initialBalance: 0.0
-    );
+    return Summary(credit: totalCredit, debit: totalDebit, initialBalance: 0.0);
   }
 
   Future<SummaryWithTransactions> getTransactionsAndSummary({

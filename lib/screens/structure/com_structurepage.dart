@@ -208,14 +208,13 @@ class _ComStructurePageState extends State<ComStructurePage> {
                             child: CustomIcons.getIcon(structure.icon, size: 24),
                           ),
                           const SizedBox(width: 16),
-
                           // Structure Color
                           Container(
-                            width: 24,
-                            height: 24,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
                               color: structureColor,
-                              borderRadius: BorderRadius.circular(4),
+                              shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -236,18 +235,7 @@ class _ComStructurePageState extends State<ComStructurePage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit),
-                                color: Colors.blue,
-                                onPressed: () {
-                                  CommonAddDialog.showStructureDialog(
-                                    context: context,
-                                    structureType: widget.structureType,
-                                    existingData: structure,
-                                  ).then((_) => _loadStructures());
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
+                                icon: const Icon(Icons.delete_outline),
                                 color: Colors.red,
                                 onPressed: () =>
                                     CommonDeleteDialog.showDeleteDialog(
