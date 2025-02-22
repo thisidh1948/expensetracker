@@ -1,3 +1,4 @@
+import 'package:expense_tracker/screens/utils/number_formatter.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../screens/home/monthly_bar_chart.dart';
@@ -77,7 +78,7 @@ class TransactionCRUD {
       final double totalBalance = initialBalance + totalCredit - totalDebit;
 
       // Format and return the balance
-      return '₹${totalBalance.toStringAsFixed(2)}';
+      return '₹${NumberFormatter.formatIndianNumber(totalBalance)}';
     } catch (e) {
       print('Error calculating total balance: $e');
       return '₹0.00';
@@ -177,7 +178,6 @@ class TransactionCRUD {
     final double initialBalance = ib.isNotEmpty
         ? double.tryParse(ib.first['value'].toString()) ?? 0.0
         : 0.0;
-
     return initialBalance + totalCredit - totalDebit;
   }
 

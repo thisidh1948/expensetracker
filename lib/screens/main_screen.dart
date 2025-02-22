@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../core/services/event_bus.dart';
 import '../database/models/monthlydata_chart.dart';
 import '../database/models/summary.dart';
 import '../database/transactions_crud.dart';
@@ -21,7 +24,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final _transactionCRUD = TransactionCRUD();
-  String  _totalBalance = "0.0";
+  late StreamSubscription<void> _transactionSubscription;
+  String _totalBalance = "0.0";
   bool _isLoading = false;
   List<MonthlyData> _monthlyData = [];
   String _errorMessage = '';
@@ -33,10 +37,14 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _refreshData();
+    _transactionSubscription = TransactionEventBus().onTransactionChanged.listen((_) {
+      _refreshData();
+    });
   }
 
   @override
   void dispose() {
+    _transactionSubscription.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -100,7 +108,8 @@ class _MainScreenState extends State<MainScreen> {
           slivers: [
             SliverSafeArea(
               sliver: SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     const SizedBox(height: 16),
@@ -120,6 +129,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+
   Widget _buildThreeDotButton() {
     return Align(
       alignment: Alignment.topRight,
@@ -129,10 +139,10 @@ class _MainScreenState extends State<MainScreen> {
           widget.scaffoldKey?.currentState?.openDrawer();
         },
       ),
-    );}
+    );
+  }
 
-
-    Widget _buildBalanceCard() {
+  Widget _buildBalanceCard() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -187,5 +197,4 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-
 }

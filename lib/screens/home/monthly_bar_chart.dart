@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import '../../database/models/monthlydata_chart.dart';
+import '../utils/number_formatter.dart';
 
 class MonthlyBarChart extends StatelessWidget {
   final List<MonthlyData> monthlyData;
@@ -11,18 +13,6 @@ class MonthlyBarChart extends StatelessWidget {
     required this.monthlyData,
     this.isLoading = false,
   }) : super(key: key);
-
-  String formatIndianNumber(double value) {
-    if (value >= 10000000) {
-      return '${(value / 10000000).toStringAsFixed(1)}Cr';
-    } else if (value >= 100000) {
-      return '${(value / 100000).toStringAsFixed(1)}L';
-    } else if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}K';
-    } else {
-      return value.toStringAsFixed(0);
-    }
-  }
 
   double _getMaxValue() {
     if (monthlyData.isEmpty) {
@@ -52,19 +42,32 @@ class MonthlyBarChart extends StatelessWidget {
 
   String _getMonthName(int month) {
     switch (month) {
-      case 1: return 'jan';
-      case 2: return 'feb';
-      case 3: return 'mar';
-      case 4: return 'apr';
-      case 5: return 'may';
-      case 6: return 'jun';
-      case 7: return 'jul';
-      case 8: return 'aug';
-      case 9: return 'sep';
-      case 10: return 'oct';
-      case 11: return 'nov';
-      case 12: return 'dec';
-      default: return '';
+      case 1:
+        return 'jan';
+      case 2:
+        return 'feb';
+      case 3:
+        return 'mar';
+      case 4:
+        return 'apr';
+      case 5:
+        return 'may';
+      case 6:
+        return 'jun';
+      case 7:
+        return 'jul';
+      case 8:
+        return 'aug';
+      case 9:
+        return 'sep';
+      case 10:
+        return 'oct';
+      case 11:
+        return 'nov';
+      case 12:
+        return 'dec';
+      default:
+        return '';
     }
   }
 
@@ -189,15 +192,30 @@ class MonthlyBarChart extends StatelessWidget {
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         if (index >= 0 && index < monthlyData.length) {
-                          final amount = monthlyData[index].income;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              formatIndianNumber(amount),
-                              style: TextStyle(
-                                color: Colors.green.shade400,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                          final income = monthlyData[index].income;
+                          final expense = monthlyData[index].expense;
+                          return SingleChildScrollView(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxHeight: 40), // Adjust the maxHeight as needed
+                              child: Column(
+                                children: [
+                                  Text(
+                                    NumberFormatter.formatIndianNumber(income),
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      color: Colors.green.shade400,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    NumberFormatter.formatIndianNumber(expense),
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      color: Colors.red.shade400,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -233,7 +251,7 @@ class MonthlyBarChart extends StatelessWidget {
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          formatIndianNumber(value),
+                          NumberFormatter.formatIndianNumber(value),
                           style: const TextStyle(fontSize: 10),
                         );
                       },
@@ -249,7 +267,7 @@ class MonthlyBarChart extends StatelessWidget {
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       String label = rodIndex == 0 ? 'Income' : 'Expense';
                       return BarTooltipItem(
-                        '$label: ${formatIndianNumber(rod.toY)}',
+                        '$label: ${NumberFormatter.formatIndianNumber(rod.toY)}',
                         const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

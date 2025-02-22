@@ -127,17 +127,17 @@ class DatabaseTables {
 
   static const insertDefaultAccounts = '''
     INSERT OR IGNORE INTO Accounts (name, icon, color) VALUES 
-    ('AXIS', 'axis', '#f3218b'),
-    ('SBI', 'sbi', '#2196F3'),
-    ('BOI', 'boi', '#F44336'),
-    ('UPILITE', 'googlepay', '#9C27B0'),
-    ('UNION', 'union', '#607D8B')
+    ('axis', 'axis', '#f3218b'),
+    ('sbi', 'sbi', '#2196F3'),
+    ('boi', 'boi', '#F44336'),
+    ('upilite', 'googlepay', '#9C27B0'),
+    ('union', 'union', '#607D8B')
   ''';
   static const insertDefaultSections = '''
     INSERT OR IGNORE INTO Sections (name, icon, color) VALUES 
-    ('HOME', 'home', '#f3218b'),
-    ('SELF', 'pay', '#2196F3'),
-    ('BRO', 'idfc', '#F44336')
+    ('home', 'home', '#f3218b'),
+    ('self', 'pay', '#2196F3'),
+    ('bro', 'idfc', '#F44336')
   ''';
 
   static const insertDefaultItems = '''

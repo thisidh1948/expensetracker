@@ -99,19 +99,14 @@ class _HomeScreenState extends State<HomeScreen> {
           // Add Transaction Button
           FloatingActionButton(
             heroTag: "transaction",
-            onPressed: () async {
-              final result = await Navigator.push(
+            onPressed: () {
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AddTransactionPage(isUpdate: false),
                   fullscreenDialog: true,
                 ),
               );
-              if (result == true) {
-                setState(() {
-                  index = 0;
-                });
-              }
             },
             backgroundColor: Theme.of(context).colorScheme.primary,
             child: const Icon(Icons.add),

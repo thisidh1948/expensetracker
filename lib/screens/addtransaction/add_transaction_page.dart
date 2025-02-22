@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/services/event_bus.dart';
 import '../../database/appdata_crud.dart';
 import '../../database/models/dbtransaction.dart';
 import '../../database/models/mapping_model.dart';
@@ -16,6 +17,7 @@ import '../../database/structures_crud.dart';
 import '../../database/transactions_crud.dart';
 import '../../widgets/customIcons.dart';
 import '../../widgets/selection_field.dart';
+import 'add_transfer_page.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final DbTransaction? transaction;
@@ -37,7 +39,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _scrollController = ScrollController();
   bool _isProcessing = false;
   final StructuresCRUD _structuresCRUD = StructuresCRUD();
-
 
   @override
   void initState() {
@@ -91,6 +92,18 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: Text(widget.isUpdate ? 'Update Transaction' : 'New Transaction'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.swap_horiz),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddTransferPage()),
+            );
+          },
+          tooltip: 'Transfer Money',
+        ),
+      ],
     );
   }
 
@@ -297,32 +310,28 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Future<void> _saveTransaction() async {
-    // Validate form and items
     if (!_formKey.currentState!.validate()) {
       _showError('Please fill in all required fields');
       return;
     }
 
     if (!_validateItems()) {
-      return; // _validateItems already shows error message
+      return;
     }
 
-    // Show processing state
+    if (!mounted) return;
     setState(() => _isProcessing = true);
 
     try {
       final transactionCRUD = TransactionCRUD();
       final List<Future> transactions = [];
 
-      // Prepare all transactions
       for (final item in _formState.items) {
-        // Validate item amounts
         if (item.amount <= 0) {
           throw ValidationException('Amount must be greater than 0');
         }
 
         final transaction = DbTransaction(
-          // Required fields
           id: widget.isUpdate && widget.transaction != null
               ? widget.transaction!.id
               : DateTime.now().millisecondsSinceEpoch,
@@ -331,8 +340,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           subcategory: _formState.subcategory!,
           cd: _formState.isCredit ? true : false,
           amount: item.amount,
-
-          // Optional fields
           section: _formState.section,
           item: item.item,
           units: item.units,
@@ -342,7 +349,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           note: _formState.note.trim(),
         );
 
-        // Add to transaction batch
         if (widget.isUpdate && widget.transaction?.id != null) {
           transactions.add(transactionCRUD.update(transaction));
         } else {
@@ -350,7 +356,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         }
       }
 
-      // Execute all transactions
       await Future.wait(transactions).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
@@ -358,28 +363,39 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         },
       );
 
-      // Show success message and close page
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      TransactionEventBus().notifyTransactionChanged();
+
+      if (!mounted) return;
+
+      // Show success message first
+      if (context.mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.clearSnackBars();
+
+        // Schedule navigation after SnackBar
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            Navigator.of(context).pop(true);
+          }
+        });
+
+        // Show SnackBar
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(widget.isUpdate
-                ? 'Transaction updated successfully'
-                : 'Transaction added successfully'),
+            content: Text(
+              widget.isUpdate
+                  ? 'Transaction updated successfully'
+                  : 'Transaction added successfully',
+            ),
             backgroundColor: Colors.green,
+            duration: const Duration(milliseconds: 1500),
           ),
         );
-        Navigator.pop(context, true);
       }
-    } on ValidationException catch (e) {
-      _showError(e.message);
-    } on TimeoutException catch (e) {
-      _showError(e.message ?? 'Transaction timeout');
-    } on DatabaseException catch (e) {
-      _showError('Database error: ${e.message}');
     } catch (e) {
-      _showError('An unexpected error occurred: ${e.toString()}');
+      if (!mounted) return;
+      _showError(e.toString());
     } finally {
-      // Reset processing state if still mounted
       if (mounted) {
         setState(() => _isProcessing = false);
       }
@@ -394,12 +410,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
     for (int i = 0; i < _formState.items.length; i++) {
       final item = _formState.items[i];
-
-      // Validate item selection
-      if (item.item == null || item.item!.isEmpty) {
-        _showError('Please select an item for Item ${i + 1}');
-        return false;
-      }
 
       // Validate units
       if (item.units <= 0) {
@@ -438,27 +448,33 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   void _showError(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
+    // Check if context is still valid
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              }
+            },
+          ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'OK',
-          textColor: Colors.white,
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
-      ),
-    );
+      );
+    }
   }
 
   Widget _buildAddItemAndSaveRow() {
@@ -478,7 +494,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _isProcessing ? null : _saveTransaction,
-            icon: _isProcessing 
+            icon: _isProcessing
                 ? const SizedBox(
                     width: 18,
                     height: 18,
@@ -524,7 +540,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (isRequired) 
+            if (isRequired)
               const Text('*', style: TextStyle(color: Colors.red)),
             const Icon(Icons.arrow_drop_down, size: 20),
           ],
@@ -536,7 +552,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Widget _buildFieldIcon(String value) {
     // Try to get custom icon first
     Widget? customIcon = CustomIcons.getIcon(value, size: 24);
-    
+
     // If custom icon is the default fallback icon, create text-based icon
     if (customIcon == CustomIcons.getIcon('receipt', size: 24)) {
       return Text(
@@ -548,7 +564,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         ),
       );
     }
-    
+
     return customIcon;
   }
 
@@ -557,8 +573,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     if (words.length > 1) {
       return (words[0][0] + words[1][0]).toUpperCase();
     }
-    return words[0].length > 1 
-        ? words[0].substring(0, 2).toUpperCase() 
+    return words[0].length > 1
+        ? words[0].substring(0, 2).toUpperCase()
         : words[0].toUpperCase();
   }
 
@@ -577,14 +593,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         }
 
         final items = snapshot.data ?? [];
-        
+
         if (value != null) {
           // Show compact version when value is selected
           final selectedItem = items.firstWhere(
             (item) => item.name == value,
             orElse: () => StructModel(name: value, icon: null),
           );
-          
+
           return _buildSelectedFieldDisplay(
             label: label,
             value: value,
@@ -621,7 +637,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             decoration: InputDecoration(
               labelText: isRequired ? '$label *' : label,
               border: const OutlineInputBorder(),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             ),
             child: Row(
               children: [
@@ -629,8 +646,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   child: Text(
                     'Select $label',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
+                          color: Theme.of(context).hintColor,
+                        ),
                   ),
                 ),
                 const Icon(Icons.arrow_drop_down),
@@ -649,17 +666,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         if (snapshot.hasError) {
           return Text('Error loading Account');
         }
-
         return SelectionField(
-          label: 'Account',
+          label: 'Bank',
           value: _formState.account,
           items: snapshot.data ?? [],
           onSelect: (String? value) {
             setState(() {
               _formState.account = value;
-              _formState.section = null;
-              _formState.category = null;
-              _formState.subcategory = null;
             });
           },
           isRequired: true,
@@ -676,8 +689,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       onSelect: (String? value) {
         setState(() {
           _formState.section = value;
-          _formState.category = null;
-          _formState.subcategory = null;
         });
       },
       isRequired: true,
@@ -693,7 +704,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         setState(() {
           _formState.category = value;
           _formState.subcategory = null;
-          // Reset items when category changes
           for (var item in _formState.items) {
             item.item = null;
           }
@@ -716,10 +726,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         }
 
         // Convert MappingModel to StructModel for consistency
-        final items = (snapshot.data ?? []).map((mapping) => StructModel(
-              name: mapping.child,
-              icon: mapping.child, // Use the name as icon identifier
-            )).toList();
+        final items = (snapshot.data ?? [])
+            .map((mapping) => StructModel(
+                  name: mapping.child,
+                  icon: mapping.child, // Use the name as icon identifier
+                ))
+            .toList();
 
         final selectedItem = items.firstWhere(
           (item) => item.name == _formState.subcategory,
@@ -746,22 +758,24 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           },
           child: InputDecorator(
             decoration: const InputDecoration(
-              labelText: 'Subcategory *',
+              labelText: 'Subcategory',
               border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             ),
             child: Row(
               children: [
                 if (_formState.subcategory != null)
-                  CustomIcons.getIcon(selectedItem.icon ?? selectedItem.name, size: 20),
+                  CustomIcons.getIcon(selectedItem.icon ?? selectedItem.name,
+                      size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _formState.subcategory ?? 'Select Subcategory',
                     style: _formState.subcategory == null
                         ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).hintColor,
-                          )
+                              color: Theme.of(context).hintColor,
+                            )
                         : null,
                   ),
                 ),
@@ -787,10 +801,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         }
 
         // Convert MappingModel to StructModel for consistency
-        final items = (snapshot.data ?? []).map((mapping) => StructModel(
-              name: mapping.child,
-              icon: mapping.child, // Use the name as icon identifier
-            )).toList();
+        final items = (snapshot.data ?? [])
+            .map((mapping) => StructModel(
+                  name: mapping.child,
+                  icon: mapping.child, // Use the name as icon identifier
+                ))
+            .toList();
 
         final selectedItem = items.firstWhere(
           (item) => item.name == _formState.items[index].item,
@@ -815,20 +831,22 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             decoration: const InputDecoration(
               labelText: 'Item',
               border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             ),
             child: Row(
               children: [
                 if (_formState.items[index].item != null)
-                  CustomIcons.getIcon(selectedItem.icon ?? selectedItem.name, size: 20),
+                  CustomIcons.getIcon(selectedItem.icon ?? selectedItem.name,
+                      size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _formState.items[index].item ?? 'Select Item',
                     style: _formState.items[index].item == null
                         ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).hintColor,
-                          )
+                              color: Theme.of(context).hintColor,
+                            )
                         : null,
                   ),
                 ),
@@ -871,7 +889,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             ),
           ],
         ),
-        const SizedBox(height:12),
+        const SizedBox(height: 12),
 
         // Total Amount row
         _buildDisplayField(
@@ -907,7 +925,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       ],
     );
   }
-
 
   Widget _buildNumberField({
     required TextEditingController controller,
@@ -1059,7 +1076,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       prefixIcon: const Icon(Icons.search),
                       hintText: 'Search $title',
                       border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 16),
                     ),
                     onChanged: (value) {
                       // TODO: Implement search functionality
@@ -1068,7 +1086,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 ),
                 Expanded(
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       childAspectRatio: 0.85,
                       crossAxisSpacing: 8,
@@ -1090,7 +1109,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                               _buildFieldIcon(item.icon ?? item.name),
                               const SizedBox(height: 8),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
                                 child: Text(
                                   item.name,
                                   textAlign: TextAlign.center,
@@ -1099,8 +1119,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                                     color: isSelected
                                         ? Theme.of(context).colorScheme.primary
                                         : null,
-                                    fontWeight: isSelected 
-                                        ? FontWeight.bold 
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
                                         : FontWeight.normal,
                                   ),
                                   maxLines: 2,

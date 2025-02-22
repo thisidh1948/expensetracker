@@ -1,11 +1,15 @@
 // lib/screens/home/views/scrollable_accounts.dart
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:expense_tracker/database/structures_crud.dart';
 import 'package:expense_tracker/database/transactions_crud.dart';
 import 'package:expense_tracker/database/models/account_model.dart';
 import 'package:expense_tracker/database/models/struct_model.dart';
+import '../../core/services/event_bus.dart';
 import '../../widgets/customIcons.dart';
+import '../utils/number_formatter.dart';
 import 'details_page.dart';
 
 class ScrollableAccountsView extends StatefulWidget {
@@ -19,14 +23,28 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
   List<AccountModel> _accounts = [];
   String _selectedAccount = '';
   bool _isLoading = false;
+  late StreamSubscription<void> _transactionSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadAccounts();
+    
+    // Listen for transaction changes
+    _transactionSubscription = TransactionEventBus()
+        .onTransactionChanged
+        .listen((_) => _loadAccounts());
+  }
+
+  @override
+  void dispose() {
+    _transactionSubscription.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAccounts() async {
+    if (!mounted) return;
+    
     setState(() => _isLoading = true);
 
     try {
@@ -37,7 +55,6 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
 
       for (var field in fields) {
         double balance = await TransactionCRUD().getAccountBalance(field.name);
-
         accountModels.add(AccountModel(
             name: field.name,
             icon: field.icon,
@@ -45,19 +62,20 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
             color: field.color));
       }
 
+      if (!mounted) return;
+
       setState(() {
         _accounts = accountModels;
         _isLoading = false;
       });
     } catch (e) {
       print('Error loading accounts: $e');
+      if (!mounted) return;
+      
       setState(() => _isLoading = false);
-      // You might want to show an error message to the user
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading accounts: $e')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading accounts: $e')),
+      );
     }
   }
 
@@ -120,7 +138,7 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
                             const SizedBox(width: 8),
                           ],
                           Text(
-                            account.name,
+                            account.name.toUpperCase(),
                             style: TextStyle(
                               color: account.color != null
                                   ? Color(int.parse(
@@ -132,7 +150,7 @@ class _ScrollableAccountsViewState extends State<ScrollableAccountsView> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '₹${account.balance.toStringAsFixed(2)}',
+                        '₹${NumberFormatter.formatIndianNumber(account.balance)}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
