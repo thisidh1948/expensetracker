@@ -7,6 +7,8 @@ import 'package:expense_tracker/services/csv_management_page.dart';
 import 'package:expense_tracker/screens/structure/managetransaction_skeleton.dart';
 import 'package:expense_tracker/screens/themes/themeprovider.dart';
 import 'package:expense_tracker/backup/backup_manager_page.dart';
+import '../loans/debts_page.dart';
+import '../loans/loaned_page.dart';
 
 import '../auth/authprovider.dart';
 
@@ -94,6 +96,31 @@ Drawer customDrawer(BuildContext context) {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const ManageTransactionSkeleton(),
+                          ),
+                        ),
+                      ),
+                      const Divider(),
+                      // Money Management Section
+                      const SectionTitle(title: 'Money Management'),
+                      _buildDrawerListTile(
+                        context,
+                        icon: Icons.money_off,
+                        title: 'Debts',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DebtsPage(),
+                          ),
+                        ),
+                      ),
+                      _buildDrawerListTile(
+                        context,
+                        icon: Icons.attach_money,
+                        title: 'Loaned',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoanedPage(),
                           ),
                         ),
                       ),

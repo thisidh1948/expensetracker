@@ -71,7 +71,7 @@ class Templates_crud {
 
     final List<Map<String, dynamic>> maps = await db!.query(
       'Templates',
-      where: 'Account = ?',
+      where: 'account = ?',
       whereArgs: [account],
     );
     return List.generate(maps.length, (i) => Template.fromMap(maps[i]));
@@ -92,7 +92,7 @@ class Templates_crud {
     final db = await database.database;
     final List<Map<String, dynamic>> maps = await db!.query(
       'Templates',
-      where: 'TName LIKE ? OR Account LIKE ? OR section LIKE ? OR category LIKE ?',
+      where: 'TName LIKE ? OR account LIKE ? OR section LIKE ? OR category LIKE ?',
       whereArgs: ['%$query%', '%$query%', '%$query%', '%$query%'],
     );
     return List.generate(maps.length, (i) => Template.fromMap(maps[i]));

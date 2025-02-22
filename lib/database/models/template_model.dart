@@ -31,7 +31,7 @@ class Template {
   Map<String, dynamic> toMap() {
     return {
       'TName': tName,
-      'Account': account,
+      'account': account,
       'section': section,
       'category': category,
       'subcategory': subcategory,
@@ -75,7 +75,7 @@ class Template {
   factory Template.fromMap(Map<String, dynamic> map) {
     return Template(
       tName: map['TName'] ?? '',
-      account: map['Account'],
+      account: map['account'],
       section: map['section'],
       category: map['category'],
       subcategory: map['subcategory'],
