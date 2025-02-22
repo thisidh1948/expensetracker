@@ -69,19 +69,37 @@ class AppDataCrud {
     }
   }
 
-  // Update record
+  // Update record - Insert if not exists
   Future<int> update(AppData data) async {
     try {
       final db = await _db.database;
-
-      return await db!.update(
+      
+      // First check if the record exists
+      final List<Map<String, dynamic>> existing = await db!.query(
         'AppData',
-        data.toMap(),
         where: 'category = ? AND key = ?',
         whereArgs: [data.category, data.key],
       );
+
+      if (existing.isEmpty) {
+        // Record doesn't exist, perform insert
+        await db.insert(
+          'AppData',
+          data.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        return 1; // Return 1 to indicate success
+      } else {
+        // Record exists, perform update
+        return await db.update(
+          'AppData',
+          data.toMap(),
+          where: 'category = ? AND key = ?',
+          whereArgs: [data.category, data.key],
+        );
+      }
     } catch (e) {
-      throw DatabaseException('Failed to update AppData: $e');
+      throw DatabaseException('Failed to update/insert AppData: $e');
     }
   }
 

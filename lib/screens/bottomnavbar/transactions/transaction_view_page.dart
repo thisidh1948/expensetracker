@@ -35,10 +35,27 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 
   Future<void> _loadStructureIcons() async {
-    final icons = await _structuresCRUD.getAllStructureIcons();
-    setState(() {
-      structureIcons = icons;
-    });
+    try {
+      final icons = await _structuresCRUD.getAllStructureIcons();
+      print("Structure icons loaded:");
+      print(icons);
+      
+      setState(() {
+        structureIcons = icons;
+      });
+    } catch (e, stackTrace) {
+      print('Error loading structure icons: $e');
+      print('Stack trace: $stackTrace');
+      // Set default empty maps to prevent null errors
+      setState(() {
+        structureIcons = {
+          'accounts': {},
+          'category': {},
+          'subcategory': {},
+          'items': {},
+        };
+      });
+    }
   }
 
   Future<void> _loadTransactions() async {

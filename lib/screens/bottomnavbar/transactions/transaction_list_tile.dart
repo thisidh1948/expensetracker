@@ -20,13 +20,23 @@ class TransactionListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Safely access the maps with null checks
+    final itemsMap = structureIcons['items'] ?? {};
+    final subcategoryMap = structureIcons['subcategory'] ?? {};
+    final categoryMap = structureIcons['category'] ?? {};
+
+    String iconName = (itemsMap[transaction.item?.toLowerCase()] ??
+                     subcategoryMap[transaction.subcategory] ?? 
+                     categoryMap[transaction.category] ?? 
+                     'more_horiz');  // Default fallback icon
+
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: transaction.cd
             ? Colors.green.withOpacity(0.1)
             : Colors.red.withOpacity(0.1),
         child: CustomIcons.getIcon(
-          structureIcons['Items']?[transaction.item] ?? 'amazon',
+          iconName,
           size: 28.0,
         ),
       ),

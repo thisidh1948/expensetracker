@@ -17,7 +17,8 @@ class CommonAddDialog {
     String? hintText,
   }) async {
     final bool isUpdate = existingData != null;
-    final nameController = TextEditingController(text: existingData?.name ?? '');
+    final nameController =
+        TextEditingController(text: existingData?.name ?? '');
     final balanceController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
@@ -27,7 +28,8 @@ class CommonAddDialog {
         : Theme.of(context).primaryColor;
 
     // Initialize selected icon label
-    String selectedIconLabel = isUpdate ? existingData!.icon ?? 'wallet' : 'wallet';
+    String selectedIconLabel =
+        isUpdate ? existingData!.icon ?? 'wallet' : 'wallet';
 
     return showDialog(
       context: context,
@@ -48,7 +50,8 @@ class CommonAddDialog {
                   children: [
                     // Title
                     Text(
-                      title ?? '${isUpdate ? 'Update' : 'Add'} ${structureType}',
+                      title ??
+                          '${isUpdate ? 'Update' : 'Add'} ${structureType}',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -61,7 +64,8 @@ class CommonAddDialog {
                       controller: nameController,
                       decoration: InputDecoration(
                         labelText: labelText ?? '${structureType} Name',
-                        hintText: hintText ?? 'Enter ${structureType.toLowerCase()} name',
+                        hintText: hintText ??
+                            'Enter ${structureType.toLowerCase()} name',
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.edit),
                       ),
@@ -156,14 +160,23 @@ class CommonAddDialog {
                                 final StructModel structModel = StructModel(
                                   name: nameController.text.trim(),
                                   icon: selectedIconLabel,
-                                  color: '#${selectedColor.value.toRadixString(16).substring(2)}',
+                                  color:
+                                      '#${selectedColor.value.toRadixString(16).substring(2)}',
                                 );
 
                                 if (isUpdate) {
-                                  await StructuresCRUD().update(
-                                    structureType,
-                                    structModel,
-                                  );
+                                  if (structureType == 'Accounts' &&
+                                      balanceController.text.isNotEmpty) {
+                                    AppDataCrud().update(new AppData(
+                                        category: "AB",
+                                        key: nameController.text.trim(),
+                                        value: balanceController.text));
+                                  } else {
+                                    await StructuresCRUD().update(
+                                      structureType,
+                                      structModel,
+                                    );
+                                  }
                                 } else {
                                   await StructuresCRUD().insert(
                                     structureType,
@@ -172,7 +185,10 @@ class CommonAddDialog {
 
                                   if (structureType == 'Accounts' &&
                                       balanceController.text.isNotEmpty) {
-                                     AppDataCrud().insert(new AppData(category: "AB", key: nameController.text.trim(), value:balanceController.text));
+                                    AppDataCrud().insert(new AppData(
+                                        category: "AB",
+                                        key: nameController.text.trim(),
+                                        value: balanceController.text));
                                   }
                                 }
 

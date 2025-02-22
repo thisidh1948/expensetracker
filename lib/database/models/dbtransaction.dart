@@ -1,5 +1,5 @@
 class DbTransaction {
-  late final int? id;
+  final int? id;
   final String account;
   final String? section;
   final String category;
@@ -32,25 +32,25 @@ class DbTransaction {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'account': account,
-      'section': section,
-      'category': category,
-      'subcategory': subcategory,
-      'item': item,
+      'account': account.toLowerCase(),
+      'section': section?.toLowerCase(),
+      'category': category.toLowerCase(),
+      'subcategory': subcategory.toLowerCase(),
+      'item': item?.toLowerCase(),
       'cd': cd ? 1 : 0, // Convert boolean to integer for SQLite
       'units': units,
       'ppu': ppu,
       'tax': tax,
       'amount': amount,
       'date': date?.toIso8601String(),
-      'note': note,
+      'note': note?.toLowerCase(),
     };
   }
 
   factory DbTransaction.fromMap(Map<String, dynamic> map) {
     return DbTransaction(
       id: map['id'],
-      account: map['Account'],
+      account: map['account'],
       section: map['section'],
       category: map['category'],
       subcategory: map['subcategory'],
@@ -82,19 +82,20 @@ class DbTransaction {
     String? note,
   }) {
     return DbTransaction(
-        id: id ?? this.id,
-        account: account ?? this.account,
-        section: section ?? this.section,
-        category: category ?? this.category,
-        subcategory: subcategory ?? this.subcategory,
-        item: item ?? this.item,
-        cd: cd ?? this.cd,
-        units: units ?? this.units,
-        ppu: ppu ?? this.ppu,
-        tax: tax ?? this.tax,
-        amount: amount ?? this.amount,
-        date: date ?? this.date,
-        note: note ?? this.note);
+      id: id ?? this.id,
+      account: account ?? this.account,
+      section: section ?? this.section,
+      category: category ?? this.category,
+      subcategory: subcategory ?? this.subcategory,
+      item: item ?? this.item,
+      cd: cd ?? this.cd,
+      units: units ?? this.units,
+      ppu: ppu ?? this.ppu,
+      tax: tax ?? this.tax,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      note: note ?? this.note,
+    );
   }
 
   @override

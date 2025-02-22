@@ -70,13 +70,16 @@ class CSVService {
       'rows': rows.skip(1).toList(),
       'headerRow': headerRow,
       'sendPort': receivePort.sendPort,
-      'uuid': _uuid,
     });
 
     final result = await receivePort.first as Map<String, dynamic>;
     final transactions = result['transactions'] as List<DbTransaction>;
     final errors = result['errors'] as List<String>;
-
+    print('Transactions: ${transactions.length}');
+    //wat to print all transactions
+    for (var transaction in transactions) {
+      print(transaction.toMap());
+    }
     // Insert valid transactions
     int successCount = 0;
     for (var transaction in transactions) {
@@ -99,25 +102,87 @@ class CSVService {
     final rows = data['rows'] as List<List<dynamic>>;
     final headerRow = data['headerRow'] as List<String>;
     final sendPort = data['sendPort'] as SendPort;
-    final uuid = data['uuid'] as Uuid;
 
     final transactions = <DbTransaction>[];
     final errors = <String>[];
     int rowNum = 1;
+    int lastTimestamp = DateTime.now().millisecondsSinceEpoch;
 
     for (final row in rows) {
       try {
         if (row.length != headerRow.length) {
-          errors.add('Row $rowNum: Invalid number of columns');
+          errors.add('Row $rowNum: Invalid number of columns (expected ${headerRow.length}, got ${row.length})');
+          rowNum++;
           continue;
         }
 
+        // Create row map
         final Map<String, dynamic> rowMap = {};
         for (var i = 0; i < headerRow.length; i++) {
-          rowMap[headerRow[i]] = row[i];
+          rowMap[headerRow[i]] = row[i] ?? ''; // Convert null to empty string
         }
-        String uuid = Uuid().v4();
-        int id = int.parse(utf8.encode(uuid).fold(0, (a, b) => a + b).toString());
+
+        // Validate required fields without skipping immediately
+        bool hasRequiredFields = true;
+        final requiredFields = ['bank', 'category', 'subcategory', 'cd', 'amount'];
+        for (var field in requiredFields) {
+          if (rowMap[field] == null || rowMap[field].toString().trim().isEmpty) {
+            errors.add('Row $rowNum: Missing required field "$field"');
+            hasRequiredFields = false;
+          }
+        }
+
+        if (!hasRequiredFields) {
+          rowNum++;
+          continue;
+        }
+
+        // Generate unique ID using timestamp
+        int id = lastTimestamp++;  // Increment to ensure uniqueness even if processed in same millisecond
+
+        // Convert cd value
+        bool isCredit = false;
+        var cdValue = rowMap['cd'];
+        if (cdValue != null) {
+          if (cdValue is num) {
+            isCredit = cdValue == 1;
+          } else if (cdValue is String) {
+            // Try parsing as number first
+            if (cdValue.trim().isNotEmpty) {
+              try {
+                isCredit = int.parse(cdValue) == 1;
+              } catch (_) {
+                isCredit = cdValue.toLowerCase() == 'credit';
+              }
+            }
+          }
+        }
+
+        // Parse date with fallback
+        DateTime date;
+        try {
+          date = rowMap['date'] != null && rowMap['date'].toString().isNotEmpty
+              ? _parseDate(rowMap['date'].toString())
+              : DateTime.now();
+        } catch (e) {
+          errors.add('Row $rowNum: Invalid date format: ${rowMap['date']}, using current date');
+          date = DateTime.now();
+        }
+
+        // Parse amount
+        double amount;
+        try {
+          amount = double.parse(rowMap['amount'].toString());
+        } catch (e) {
+          errors.add('Row $rowNum: Invalid amount format: ${rowMap['amount']}');
+          rowNum++;
+          continue;
+        }
+
+        // Parse optional numeric fields with better error handling
+        double? units = _parseDoubleWithFallback(rowMap['units']?.toString(), 0);
+        double? ppu = _parseDoubleWithFallback(rowMap['ppu']?.toString(), 0);
+        double? tax = _parseDoubleWithFallback(rowMap['tax']?.toString(), 0);
 
         transactions.add(DbTransaction(
           id: id,
@@ -126,24 +191,31 @@ class CSVService {
           category: rowMap['category'].toString(),
           subcategory: rowMap['subcategory'].toString(),
           item: rowMap['item']?.toString(),
-          cd: rowMap['cd'] != null ? rowMap['cd'].toString().toLowerCase() == 'credit' : false,
-          units: double.tryParse(rowMap['units']?.toString() ?? ''),
-          ppu: double.tryParse(rowMap['ppu']?.toString() ?? ''),
-          tax: double.tryParse(rowMap['tax']?.toString() ?? ''),
-          amount: double.parse(rowMap['amount'].toString()),
-          date: _parseDate(rowMap['date'].toString()),
+          cd: isCredit,
+          units: units,
+          ppu: ppu,
+          tax: tax,
+          amount: amount,
+          date: date,
           note: rowMap['note']?.toString(),
         ));
 
-        // Add a small delay between processing rows
-        await Future.delayed(Duration(milliseconds: 10));
-      } catch (e) {
-        errors.add('Row $rowNum: ${e.toString()}');
+      } catch (e, stackTrace) {
+        errors.add('Row $rowNum: Unexpected error: $e\n$stackTrace');
       }
       rowNum++;
     }
 
     sendPort.send({'transactions': transactions, 'errors': errors});
+  }
+
+  static double? _parseDoubleWithFallback(String? value, double fallback) {
+    if (value == null || value.trim().isEmpty) return fallback;
+    try {
+      return double.parse(value);
+    } catch (_) {
+      return fallback;
+    }
   }
 
   static DateTime _parseDate(String dateString) {

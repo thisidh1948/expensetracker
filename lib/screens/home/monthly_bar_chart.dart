@@ -25,13 +25,17 @@ class MonthlyBarChart extends StatelessWidget {
   }
 
   double _getMaxValue() {
+    if (monthlyData.isEmpty) {
+      return 1000; // Return a default value when there's no data
+    }
     final maxIncome = monthlyData
         .map((data) => data.income)
         .reduce((max, value) => max > value ? max : value);
     final maxExpense = monthlyData
         .map((data) => data.expense)
         .reduce((max, value) => max > value ? max : value);
-    return (maxIncome > maxExpense ? maxIncome : maxExpense) * 1.2;
+    final maxValue = (maxIncome > maxExpense ? maxIncome : maxExpense) * 1.2;
+    return maxValue > 0 ? maxValue : 1000;
   }
 
   String _getMonthYear(String date) {
@@ -121,7 +125,30 @@ class MonthlyBarChart extends StatelessWidget {
     }
 
     if (monthlyData.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return Container(
+        height: 300, // Set a fixed height or adjust as needed
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.bar_chart,
+                size: 48,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No data available',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Column(

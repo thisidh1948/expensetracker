@@ -43,6 +43,14 @@ class DatabaseHelper {
     await db.execute(DatabaseTables.createItemsForSubcategoryTable);
     await db.execute(DatabaseTables.createTemplatesTable);
     await db.execute(DatabaseTables.createAppDataTable);
+    await db.execute(DatabaseTables.createLoansTable);
+
+    await db.execute(DatabaseTables.insertDefaultAccounts);
+    await db.execute(DatabaseTables.insertDefaultSections);
+    await db.execute(DatabaseTables.insertDefaultItems);
+    await db.execute(DatabaseTables.insertDefaultCategories);
+    await db.execute(DatabaseTables.insertDefaultSubCategories);
+    await db.execute(DatabaseTables.insertDefaultSubcategoriesForCategory);
   }
 
   // Method to check if database exists

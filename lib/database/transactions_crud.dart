@@ -165,7 +165,7 @@ class TransactionCRUD {
         COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as credits,
         COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as debits
       FROM Alldata 
-      WHERE Account = ?
+      WHERE account = ?
     ''', [accountName]);
 
     final double totalCredit = result.first['credits']?.toDouble() ?? 0.0;

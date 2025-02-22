@@ -144,7 +144,7 @@ class StructuresCRUD {
 
     // Get icons from accounts table
     final List<Map<String, dynamic>> accountMaps = await db!.query(
-      Table.accounts,
+      ATableNames.accounts,
       columns: ['name', 'icon'],
     );
     result['accounts'] = Map.fromEntries(accountMaps
@@ -152,7 +152,7 @@ class StructuresCRUD {
 
     // Get icons from category table
     final List<Map<String, dynamic>> categoryMaps = await db.query(
-      Table.categories,
+      ATableNames.categories,
       columns: ['name', 'icon'],
     );
     result['category'] = Map.fromEntries(categoryMaps
@@ -160,7 +160,7 @@ class StructuresCRUD {
 
     // Get icons from subcategory table
     final List<Map<String, dynamic>> subcategoryMaps = await db.query(
-      Table.subCategories,
+      ATableNames.subCategories,
       columns: ['name', 'icon'],
     );
     result['subcategory'] = Map.fromEntries(subcategoryMaps
@@ -168,7 +168,7 @@ class StructuresCRUD {
 
     // Get icons from items table
     final List<Map<String, dynamic>> itemMaps = await db.query(
-      Table.items,
+      ATableNames.items,
       columns: ['name', 'icon'],
     );
     result['items'] = Map.fromEntries(itemMaps

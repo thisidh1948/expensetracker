@@ -1,6 +1,7 @@
 // add_transaction_page2.dart
 import 'dart:async';
 
+import 'package:expense_tracker/database/database_tables.dart';
 import 'package:expense_tracker/screens/addtransaction/transaction_item_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +11,11 @@ import 'package:intl/intl.dart';
 import '../../database/appdata_crud.dart';
 import '../../database/models/dbtransaction.dart';
 import '../../database/models/mapping_model.dart';
+import '../../database/models/struct_model.dart';
 import '../../database/structures_crud.dart';
 import '../../database/transactions_crud.dart';
+import '../../widgets/customIcons.dart';
+import '../../widgets/selection_field.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final DbTransaction? transaction;
@@ -32,6 +36,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late final TransactionFormState _formState;
   final _scrollController = ScrollController();
   bool _isProcessing = false;
+  final StructuresCRUD _structuresCRUD = StructuresCRUD();
+
 
   @override
   void initState() {
@@ -55,7 +61,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       isCredit: tx.cd == '1',
       items: [
         TransactionItem(
-          item: tx.item,
+          item: tx.item ?? '',
           units: tx.units ?? 1,
           ppu: tx.ppu ?? 0,
           tax: tx.tax ?? 0,
@@ -85,24 +91,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: Text(widget.isUpdate ? 'Update Transaction' : 'New Transaction'),
-      actions: [
-        if (_isProcessing)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          )
-        else
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveTransaction,
-          ),
-      ],
     );
   }
 
@@ -120,7 +108,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 const SizedBox(height: 8),
                 _buildItemsList(),
                 const SizedBox(height: 8),
-                _buildAddItemButton(),
+                _buildAddItemAndSaveRow(),
                 const SizedBox(height: 8),
                 _buildSummary(),
               ],
@@ -138,47 +126,30 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Account and Section Row
             Row(
               children: [
-                Expanded(
-                  child: _buildAccountDropdown(),
-                ),
+                Expanded(child: _buildAccountField()),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _buildSectionDropdown(),
-                ),
+                Expanded(child: _buildSectionField()),
               ],
             ),
             const SizedBox(height: 12),
-
-            // Category and Subcategory Row
             Row(
               children: [
-                Expanded(
-                  child: _buildCategoryDropdown(),
-                ),
+                Expanded(child: _buildCategoryField()),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _buildSubcategoryDropdown(),
-                ),
+                Expanded(child: _buildSubcategoryField()),
               ],
             ),
             const SizedBox(height: 12),
-
-            // Date and Transaction Type Row
             Row(
               children: [
-                Expanded(
-                  child: _buildDatePicker(),
-                ),
+                Expanded(child: _buildDatePicker()),
                 const SizedBox(width: 12),
                 _buildTransactionTypeSwitch(),
               ],
             ),
             const SizedBox(height: 12),
-
-            // Note Field (full width)
             _buildNoteField(),
           ],
         ),
@@ -238,7 +209,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           children: [
             _buildItemHeader(index),
             const SizedBox(height: 8),
-            _buildItemDropdown(index),
+            _buildItemField(index),
             const SizedBox(height: 8),
             _buildItemCalculations(item),
           ],
@@ -490,213 +461,381 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
   }
 
-  Widget _buildAddItemButton() {
-    return ElevatedButton.icon(
-      onPressed: _addNewItem,
-      icon: const Icon(Icons.add),
-      label: const Text('Add Item'),
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 48),
+  Widget _buildAddItemAndSaveRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _addNewItem,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Item'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isProcessing ? null : _saveTransaction,
+            icon: _isProcessing 
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save),
+            label: Text(_isProcessing ? 'Saving...' : 'Save'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedFieldDisplay({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+    String? iconName,
+    bool isRequired = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 40, // Reduced height for selected state
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          children: [
+            _buildFieldIcon(iconName ?? value),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isRequired) 
+              const Text('*', style: TextStyle(color: Colors.red)),
+            const Icon(Icons.arrow_drop_down, size: 20),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildAccountDropdown() {
-    return FutureBuilder<List<String>>(
-      future: StructuresCRUD().getAllNames('Accounts'),
+  Widget _buildFieldIcon(String value) {
+    // Try to get custom icon first
+    Widget? customIcon = CustomIcons.getIcon(value, size: 24);
+    
+    // If custom icon is the default fallback icon, create text-based icon
+    if (customIcon == CustomIcons.getIcon('receipt', size: 24)) {
+      return Text(
+        _getInitials(value),
+        style: TextStyle(
+          color: Theme.of(context).primaryColor,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+    
+    return customIcon;
+  }
+
+  String _getInitials(String value) {
+    final words = value.trim().split(' ');
+    if (words.length > 1) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return words[0].length > 1 
+        ? words[0].substring(0, 2).toUpperCase() 
+        : words[0].toUpperCase();
+  }
+
+  Widget _buildSelectionField({
+    required String label,
+    required String? value,
+    required Future<List<StructModel>> Function() fetchItems,
+    required Function(String?) onSelect,
+    bool isRequired = false,
+  }) {
+    return FutureBuilder<List<StructModel>>(
+      future: fetchItems(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Text('Error loading accounts');
+          return Text('Error loading $label');
         }
 
-        return DropdownButtonFormField<String>(
-          decoration: const InputDecoration(
-            labelText: 'Account',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          ),
-          value: _formState.account,
-          items: (snapshot.data ?? []).map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
+        final items = snapshot.data ?? [];
+        
+        if (value != null) {
+          // Show compact version when value is selected
+          final selectedItem = items.firstWhere(
+            (item) => item.name == value,
+            orElse: () => StructModel(name: value, icon: null),
+          );
+          
+          return _buildSelectedFieldDisplay(
+            label: label,
+            value: value,
+            iconName: selectedItem.icon,
+            onTap: () async {
+              final selected = await _showSelectionDialog(
+                context: context,
+                title: label,
+                items: items,
+                selectedValue: value,
+              );
+              if (selected != null) {
+                onSelect(selected);
+              }
+            },
+            isRequired: isRequired,
+          );
+        }
+
+        // Show full selection field when no value is selected
+        return InkWell(
+          onTap: () async {
+            final selected = await _showSelectionDialog(
+              context: context,
+              title: label,
+              items: items,
+              selectedValue: value,
             );
-          }).toList(),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Required';
+            if (selected != null) {
+              onSelect(selected);
             }
-            return null;
           },
-          onChanged: (String? newValue) {
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: isRequired ? '$label *' : label,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Select $label',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAccountField() {
+    return FutureBuilder<List<StructModel>>(
+      future: _structuresCRUD.getAllTableData(ATableNames.accounts),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text('Error loading Account');
+        }
+
+        return SelectionField(
+          label: 'Account',
+          value: _formState.account,
+          items: snapshot.data ?? [],
+          onSelect: (String? value) {
             setState(() {
-              _formState.account = newValue;
+              _formState.account = value;
               _formState.section = null;
               _formState.category = null;
               _formState.subcategory = null;
             });
           },
+          isRequired: true,
         );
       },
     );
   }
 
-  Widget _buildSectionDropdown() {
-    return FutureBuilder<List<String>>(
-      future: StructuresCRUD().getAllNames('Sections'),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Text('Error loading sections');
-        }
-
-        return DropdownButtonFormField<String>(
-          decoration: const InputDecoration(
-            labelText: 'Section',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          ),
-          value: _formState.section,
-          items: (snapshot.data ?? []).map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              _formState.section = newValue;
-              _formState.category = null;
-              _formState.subcategory = null;
-            });
-          },
-        );
+  Widget _buildSectionField() {
+    return _buildSelectionField(
+      label: 'Section',
+      value: _formState.section,
+      fetchItems: () => _structuresCRUD.getAllTableData(ATableNames.sections),
+      onSelect: (String? value) {
+        setState(() {
+          _formState.section = value;
+          _formState.category = null;
+          _formState.subcategory = null;
+        });
       },
+      isRequired: true,
     );
   }
 
-  Widget _buildCategoryDropdown() {
-    return FutureBuilder<List<String>>(
-      future: StructuresCRUD().getAllNames('Categories'),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Text('Error loading categories');
-        }
-
-        return DropdownButtonFormField<String>(
-          decoration: const InputDecoration(
-            labelText: 'Category',
-            border: OutlineInputBorder(),
-          ),
-          value: _formState.category,
-          items: (snapshot.data ?? []).map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please select a category';
-            }
-            return null;
-          },
-          onChanged: (String? newValue) {
-            setState(() {
-              _formState.category = newValue;
-              _formState.subcategory = null;
-            });
-          },
-        );
+  Widget _buildCategoryField() {
+    return _buildSelectionField(
+      label: 'Category',
+      value: _formState.category,
+      fetchItems: () => _structuresCRUD.getAllTableData(ATableNames.categories),
+      onSelect: (String? value) {
+        setState(() {
+          _formState.category = value;
+          _formState.subcategory = null;
+          // Reset items when category changes
+          for (var item in _formState.items) {
+            item.item = null;
+          }
+        });
       },
+      isRequired: true,
     );
   }
 
-  Widget _buildSubcategoryDropdown() {
+  Widget _buildSubcategoryField() {
     if (_formState.category == null) {
       return const SizedBox.shrink();
     }
 
     return FutureBuilder<List<MappingModel>>(
-      future:
-          StructuresCRUD().getSubCategoriesForCategory(_formState.category!),
+      future: _structuresCRUD.getSubCategoriesForCategory(_formState.category!),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Text('Error loading subcategories');
         }
 
-        final subcategories =
-            snapshot.data?.map((mapping) => mapping.child).toList() ?? [];
+        // Convert MappingModel to StructModel for consistency
+        final items = (snapshot.data ?? []).map((mapping) => StructModel(
+              name: mapping.child,
+              icon: mapping.child, // Use the name as icon identifier
+            )).toList();
 
-        return DropdownButtonFormField<String>(
-          decoration: const InputDecoration(
-            labelText: 'Subcategory',
-            border: OutlineInputBorder(),
-          ),
-          value: _formState.subcategory,
-          items: subcategories.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
+        final selectedItem = items.firstWhere(
+          (item) => item.name == _formState.subcategory,
+          orElse: () => StructModel(name: '', icon: null),
+        );
+
+        return InkWell(
+          onTap: () async {
+            final selected = await _showSelectionDialog(
+              context: context,
+              title: 'Subcategory',
+              items: items,
+              selectedValue: _formState.subcategory,
             );
-          }).toList(),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please select a subcategory';
+            if (selected != null) {
+              setState(() {
+                _formState.subcategory = selected;
+                // Reset items when subcategory changes
+                for (var item in _formState.items) {
+                  item.item = null;
+                }
+              });
             }
-            return null;
           },
-          onChanged: (String? newValue) {
-            setState(() {
-              _formState.subcategory = newValue;
-              // Reset items when subcategory changes
-              for (var item in _formState.items) {
-                item.item = null;
-              }
-            });
-          },
+          child: InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Subcategory *',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            ),
+            child: Row(
+              children: [
+                if (_formState.subcategory != null)
+                  CustomIcons.getIcon(selectedItem.icon ?? selectedItem.name, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _formState.subcategory ?? 'Select Subcategory',
+                    style: _formState.subcategory == null
+                        ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).hintColor,
+                          )
+                        : null,
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildItemDropdown(int index) {
+  Widget _buildItemField(int index) {
     if (_formState.subcategory == null) {
       return const SizedBox.shrink();
     }
 
     return FutureBuilder<List<MappingModel>>(
-      future: StructuresCRUD().getItemsForSubcategory(_formState.subcategory!),
+      future: _structuresCRUD.getItemsForSubcategory(_formState.subcategory!),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Text('Error loading items');
         }
 
-        final items =
-            snapshot.data?.map((mapping) => mapping.child).toList() ?? [];
+        // Convert MappingModel to StructModel for consistency
+        final items = (snapshot.data ?? []).map((mapping) => StructModel(
+              name: mapping.child,
+              icon: mapping.child, // Use the name as icon identifier
+            )).toList();
 
-        return DropdownButtonFormField<String>(
-          decoration: const InputDecoration(
-            labelText: 'Item',
-            border: OutlineInputBorder(),
-          ),
-          value: _formState.items[index].item,
-          items: items.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
+        final selectedItem = items.firstWhere(
+          (item) => item.name == _formState.items[index].item,
+          orElse: () => StructModel(name: '', icon: null),
+        );
+
+        return InkWell(
+          onTap: () async {
+            final selected = await _showSelectionDialog(
+              context: context,
+              title: 'Item',
+              items: items,
+              selectedValue: _formState.items[index].item,
             );
-          }).toList(),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please select an item';
+            if (selected != null) {
+              setState(() {
+                _formState.items[index].item = selected;
+              });
             }
-            return null;
           },
-          onChanged: (String? newValue) {
-            setState(() {
-              _formState.items[index].item = newValue;
-            });
-          },
+          child: InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Item',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            ),
+            child: Row(
+              children: [
+                if (_formState.items[index].item != null)
+                  CustomIcons.getIcon(selectedItem.icon ?? selectedItem.name, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _formState.items[index].item ?? 'Select Item',
+                    style: _formState.items[index].item == null
+                        ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).hintColor,
+                          )
+                        : null,
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -893,6 +1032,98 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       maxLines: 2,
       onChanged: (value) {
         _formState.note = value;
+      },
+    );
+  }
+
+  Future<String?> _showSelectionDialog({
+    required BuildContext context,
+    required String title,
+    required List<StructModel> items,
+    String? selectedValue,
+  }) {
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Search $title',
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    onChanged: (value) {
+                      // TODO: Implement search functionality
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final isSelected = item.name == selectedValue;
+                      return InkWell(
+                        onTap: () => Navigator.of(context).pop(item.name),
+                        child: Card(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primaryContainer
+                              : null,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildFieldIcon(item.icon ?? item.name),
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  item.name,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                    fontWeight: isSelected 
+                                        ? FontWeight.bold 
+                                        : FontWeight.normal,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
       },
     );
   }
