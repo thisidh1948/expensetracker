@@ -6,13 +6,15 @@ import 'package:intl/intl.dart';
 
 import '../../database/models/summary.dart';
 import '../../database/structures_crud.dart';
+import '../../widgets/confirmation_dialog.dart';
 import '../bottomnavbar/transactions/transaction_list_view.dart';
 
 class DetailsPage extends StatefulWidget {
   final String structureType;
   final String name;
 
-  const DetailsPage({super.key, required this.structureType, required this.name});
+  const DetailsPage(
+      {super.key, required this.structureType, required this.name});
 
   @override
   _DetailsPageState createState() => _DetailsPageState();
@@ -50,7 +52,8 @@ class _DetailsPageState extends State<DetailsPage> {
   Future<void> _loadTransactions() async {
     setState(() => _isLoading = true);
     try {
-      List<DbTransaction> transactions = await TransactionCRUD().getAllTransactions();
+      List<DbTransaction> transactions =
+          await TransactionCRUD().getAllTransactions();
       List<DbTransaction> structureTransactions = transactions
           .where((transaction) => transaction.account == widget.name)
           .toList();
@@ -59,7 +62,7 @@ class _DetailsPageState extends State<DetailsPage> {
         structureTransactions = structureTransactions.where((transaction) {
           final transactionDate = transaction.date;
           return transactionDate!.isAfter(_selectedDateRange!.start
-              .subtract(const Duration(days: 1))) &&
+                  .subtract(const Duration(days: 1))) &&
               transactionDate.isBefore(
                   _selectedDateRange!.end.add(const Duration(days: 1)));
         }).toList();
@@ -184,7 +187,6 @@ class _DetailsPageState extends State<DetailsPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,45 +196,45 @@ class _DetailsPageState extends State<DetailsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          _buildSummaryCard(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton.icon(
-                onPressed: _selectDateRange,
-                icon: const Icon(Icons.date_range),
-                label: Text(
-                  _selectedDateRange != null
-                      ? '${DateFormat('MMM d, y').format(_selectedDateRange!.start)} - '
-                      '${DateFormat('MMM d, y').format(_selectedDateRange!.end)}'
-                      : 'Select Date',
-                  style: const TextStyle(fontSize: 12),
+              children: [
+                _buildSummaryCard(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _selectDateRange,
+                      icon: const Icon(Icons.date_range),
+                      label: Text(
+                        _selectedDateRange != null
+                            ? '${DateFormat('MMM d, y').format(_selectedDateRange!.start)} - '
+                                '${DateFormat('MMM d, y').format(_selectedDateRange!.end)}'
+                            : 'Select Date',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : TransactionListView(
-              transactions: _transactions,
-              isLoading: _isLoading,
-              onTapTransaction: (transaction) => TransactionUtils.showTransactionDetails(
-                context,
-                transaction,
-                structureIcons,
-              ),
-              onLongPressTransaction: (transaction) => TransactionUtils.editTransaction(
-                context,
-                transaction,
-                onRefresh: _loadTransactions
-              ),
-              structureIcons: structureIcons,
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : TransactionListView(
+                          transactions: _transactions,
+                          isLoading: _isLoading,
+                          onTapTransaction: (transaction) =>
+                              TransactionUtils.showTransactionDetails(
+                            context,
+                            transaction,
+                            structureIcons,
+                          ),
+                          onLongPressTransaction: (transaction) =>
+                              TransactionUtils.editTransaction(
+                                  context, transaction,
+                                  onRefresh: _loadTransactions),
+                          structureIcons: structureIcons,
+                        ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

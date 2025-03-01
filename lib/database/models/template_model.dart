@@ -89,7 +89,6 @@ class Template {
   }
 
   DbTransaction toDbTransaction() {
-    print("2525625456");
     return DbTransaction(
       account: account ?? '',
       section: section ?? '',

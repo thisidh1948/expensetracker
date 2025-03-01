@@ -52,27 +52,21 @@ class TransactionCRUD {
 
   Future<String> getTotalBalance() async {
     final db = await _databaseHelper.database;
+    if (db == null) {
+      return '₹0.00';
+    }
     try {
-      // Get initial balance from AppData
-      final List<Map<String, dynamic>> initialBalanceResult = await db!
-          .rawQuery('''SELECT COALESCE(SUM(CAST(value AS DECIMAL)), 0) as total 
-         FROM AppData 
-         WHERE category = 'AB' ''');
-      final double initialBalance =
-          initialBalanceResult.first['total']?.toDouble() ?? 0.0;
-
       // Get total credits and debits from Alldata
       final List<Map<String, dynamic>> result = await db.rawQuery('''
-      SELECT 
-        COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as total_credit,
-        COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as total_debit
-      FROM Alldata
-      WHERE category NOT IN ('SELF TRANSFER')
-    ''');
+      SELECT
+        COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as credits,
+        COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as debits,
+        (SELECT COALESCE(SUM(balance), 0) FROM Accounts) as initial_balance
+      FROM Alldata ''');
 
-      final double totalCredit =
-          result.first['total_credit']?.toDouble() ?? 0.0;
-      final double totalDebit = result.first['total_debit']?.toDouble() ?? 0.0;
+      final double totalCredit = result.first['credits']?.toDouble() ?? 0.0;
+      final double totalDebit = result.first['debits']?.toDouble() ?? 0.0;
+      final double initialBalance = result.first['initial_balance']?.toDouble() ?? 0.0;
 
       // Calculate final balance
       final double totalBalance = initialBalance + totalCredit - totalDebit;
@@ -103,7 +97,8 @@ class TransactionCRUD {
     dynamic columnValue,
     DateTime? startDate,
     DateTime? endDate,
-  }) async {
+  }) async
+  {
     final db = await _databaseHelper.database;
 
     final List<String> whereConditions = [];
@@ -162,22 +157,18 @@ class TransactionCRUD {
   Future<double> getAccountBalance(String accountName) async {
     final db = await _databaseHelper.database;
     final List<Map<String, dynamic>> result = await db!.rawQuery('''
-      SELECT 
-        COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as credits,
-        COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as debits
-      FROM Alldata 
-      WHERE account = ?
-    ''', [accountName]);
+    SELECT
+      COALESCE(SUM(CASE WHEN cd = 1 THEN amount ELSE 0 END), 0) as credits,
+      COALESCE(SUM(CASE WHEN cd = 0 THEN amount ELSE 0 END), 0) as debits,
+      (SELECT COALESCE(balance, 0) FROM Accounts WHERE name = ?) as initial_balance
+    FROM Alldata
+    WHERE account = ?
+  ''', [accountName, accountName]);
 
     final double totalCredit = result.first['credits']?.toDouble() ?? 0.0;
     final double totalDebit = result.first['debits']?.toDouble() ?? 0.0;
+    final double initialBalance = result.first['initial_balance']?.toDouble() ?? 0.0;
 
-    final List<Map<String, dynamic>> ib = await db.rawQuery(
-        '''SELECT value FROM AppData WHERE category ='AB' and key = ?''',
-        [accountName]);
-    final double initialBalance = ib.isNotEmpty
-        ? double.tryParse(ib.first['value'].toString()) ?? 0.0
-        : 0.0;
     return initialBalance + totalCredit - totalDebit;
   }
 

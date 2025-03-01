@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-
 import '../../database/loans_crud.dart';
 import '../../database/models/loan.dart';
 import 'add_loan_sheet.dart';
 import 'loan_details_sheet.dart';
 import 'loan_list_tile.dart';
-
 
 class LoanBasePage extends StatefulWidget {
   final String personRole;
@@ -64,6 +62,18 @@ class _LoanBasePageState extends State<LoanBasePage> {
     }
   }
 
+  Future<void> _editLoan(Loan loan) async {
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => AddLoanSheet(personRole: widget.personRole, loan: loan),
+    );
+
+    if (result == true) {
+      _loadLoans();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,14 +88,14 @@ class _LoanBasePageState extends State<LoanBasePage> {
       ),
       body: Column(
         children: [
-          _buildSearchBar(),
+          //_buildSearchBar(),
           _buildTotalAmount(),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _loans.isEmpty
-                    ? _buildEmptyState()
-                    : _buildLoansList(),
+                ? _buildEmptyState()
+                : _buildLoansList(),
           ),
         ],
       ),
@@ -132,9 +142,9 @@ class _LoanBasePageState extends State<LoanBasePage> {
               Text(
                 '₹${snapshot.data?.toStringAsFixed(2) ?? '0.00'}',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -174,6 +184,7 @@ class _LoanBasePageState extends State<LoanBasePage> {
         return LoanListTile(
           loan: loan,
           onTap: () => _showLoanDetails(loan),
+          onLongPress: () => _editLoan(loan),
         );
       },
     );
@@ -232,4 +243,4 @@ class _LoanBasePageState extends State<LoanBasePage> {
       ),
     );
   }
-} 
+}

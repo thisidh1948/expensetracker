@@ -38,6 +38,53 @@ class CustomIcons {
     'shoppingbag': 'assets/icons/shoppingbag.svg',
     'transactions': 'assets/icons/transactions.svg',
 
+    //New Icons
+    'ac': 'assets/icons/ac.svg',
+    'accomidation': 'assets/icons/accomidation.svg',
+    'applaince': 'assets/icons/applaince.svg',
+    'charity': 'assets/icons/charity.svg',
+    'close': 'assets/icons/close.svg',
+    'closed': 'assets/icons/closed.svg',
+    'debt': 'assets/icons/debt.svg',
+    'deposit': 'assets/icons/deposit.svg',
+    'fine': 'assets/icons/fine.svg',
+    'flight': 'assets/icons/flight.svg',
+    'fridge': 'assets/icons/fridge.svg',
+    'furniture': 'assets/icons/furniture.svg',
+    'help': 'assets/icons/help.svg',
+    'idea': 'assets/icons/idea.svg',
+    'installment': 'assets/icons/installment.svg',
+    'insurance': 'assets/icons/insurance.svg',
+    'lent': 'assets/icons/lent.svg',
+    'loan': 'assets/icons/loan.svg',
+    'loanopen': 'assets/icons/loanopen.svg',
+    'oiler': 'assets/icons/oiler.svg',
+    'parking': 'assets/icons/parking.svg',
+    'pin': 'assets/icons/pin.svg',
+    'silver': 'assets/icons/silver.svg',
+    'spares': 'assets/icons/spares.svg',
+    'sports': 'assets/icons/sports.svg',
+    'sprout': 'assets/icons/sprout.svg',
+    'stocks': 'assets/icons/stocks.svg',
+    'unknown': 'assets/icons/unknown.svg',
+    'utilities': 'assets/icons/utilities.svg',
+
+    'cggb': 'assets/icons/CGGB.svg',
+    'chef': 'assets/icons/chef.svg',
+    'farmer': 'assets/icons/farmer.svg',
+    'gas': 'assets/icons/gas.svg',
+    'knife': 'assets/icons/knife.svg',
+    'man': 'assets/icons/man.svg',
+    'man2': 'assets/icons/man2.svg',
+    'man3': 'assets/icons/man3.svg',
+    'map': 'assets/icons/map.svg',
+    'nodata': 'assets/icons/nodata.svg',
+    'photographer': 'assets/icons/photographer.svg',
+    'pot': 'assets/icons/pot.svg',
+    'user': 'assets/icons/user.svg',
+    'woman': 'assets/icons/woman.svg',
+
+
     // Transportation
     'atc': 'assets/icons/atc.svg',
     'atm': 'assets/icons/atm.svg',
@@ -172,29 +219,31 @@ class CustomIcons {
 
 
   // Get icons by category
-  static Map<String, List<String>> getCategoryIcons() {
-    return {
-      'Banking & Money': [
-        'axis', 'icici', 'sbi', 'anz', 'au', 'bob', 'citibank', 'deutsche', 'hdfc', 'idbi', 'kotak', 'union', 'boi', 'pay', 'hsbc', 'idfc', 'induslnd', 'paytm', 'pnb', 'yesbank'
-      ],
-      'Shopping & Payments': [
-        'airticket', 'amazon', 'amazonpay', 'applepay', 'creditcard', 'flipkart', 'googlepay', 'mastercard', 'shopping', 'shoppingbag', 'transactions'
-      ],
-      'Transportation': [
-        'atc', 'atm', 'auto', 'banktransfer', 'bike', 'bus', 'cab', 'car', 'honda', 'mitsubishi', 'petrol', 'train', 'transport'
-      ],
-      'Bills & Utilities': [
-        'bill', 'electricitybill', 'receipt', 'tax'
-      ],
-      'Home & Essentials': [
-        'cash', 'chemicals', 'clothing', 'computer', 'construction', 'curryrice', 'cutting', 'edit', 'electronics', 'essentials', 'fertilizer', 'film', 'fire', 'fuel', 'glassbottle', 'gold', 'google', 'hf', 'hindu', 'home', 'hotel', 'iron', 'key', 'land', 'leaves', 'lightbulb', 'login', 'menuhorizontal', 'mouse', 'palmtree', 'rent', 'sale', 'settings', 'shoes', 'tablets', 'tag', 'tobbaco', 'tools', 'tractor', 'trash', 'tree', 'unlock', 'watch', 'waterbottele', 'wifi', 'wood', 'worker', 'workers', 'youtube'
-      ],
-      'Food & Beverages': [
-        'coke','apple', 'banana', 'beans', 'beer', 'beverage', 'biscuit', 'bread', 'brinjal', 'broccoli', 'cabbage', 'carrot', 'chicken', 'chili', 'chocolate', 'corn', 'crab', 'cutlery', 'cylinder', 'dinning', 'drinks', 'egg', 'fish', 'flour', 'fries', 'garlic', 'grape', 'greens', 'groceries', 'hamburger', 'honey', 'icecream', 'instantfood', 'juice', 'knifes', 'lemon', 'milk', 'mocktail', 'mushroom', 'noodles', 'oils', 'onion', 'orange', 'peas', 'pineapple', 'pizza', 'potatoes', 'sandwich', 'shrimp', 'steak', 'strawberry', 'streetf', 'tomato', 'vegetables', 'watermelon', 'wheat', 'zomato'
-      ],
-    };
-  }
-
+ static Map<String, List<String>> getCategoryIcons() {
+   return {
+     'Banking & Money': [
+       'axis', 'icici', 'sbi', 'anz', 'au', 'bob', 'citibank', 'deutsche', 'hdfc', 'idbi', 'kotak', 'union', 'boi', 'pay', 'hsbc', 'idfc', 'googlepay', 'induslnd', 'paytm', 'pnb', 'yesbank', 'cggb', 'amazonpay', 'applepay'
+     ],
+     'Shopping & Payments': [
+       'airticket', 'amazon', 'creditcard', 'flipkart', 'mastercard', 'shopping', 'shoppingbag', 'transactions',  'atm', 'charity', 'close', 'closed', 'debt', 'deposit', 'fine', 'installment', 'insurance', 'lent', 'loan', 'loanopen'
+     ],
+     'Transportation': [
+       'atc', 'auto', 'banktransfer', 'bike', 'bus', 'cab', 'car', 'honda', 'mitsubishi', 'petrol', 'train', 'transport'
+     ],
+     'Bills & Utilities': [
+       'bill', 'electricitybill', 'receipt', 'tax', 'utilities'
+     ],
+     'Home & Essentials': [
+       'applaince', 'cash', 'chemicals', 'clothing', 'computer', 'construction', 'curryrice', 'cutting', 'edit', 'electronics', 'essentials', 'fertilizer', 'film', 'fire', 'fuel', 'glassbottle', 'gold', 'google', 'hf', 'hindu', 'home', 'hotel', 'iron', 'key', 'land', 'leaves', 'lightbulb', 'login', 'menuhorizontal', 'mouse', 'palmtree', 'rent', 'sale', 'settings', 'shoes', 'tablets', 'tag', 'tobbaco', 'tools', 'tractor', 'trash', 'tree', 'unlock', 'watch', 'waterbottele', 'wifi', 'wood', 'worker', 'workers', 'youtube'
+     ],
+     'Food & Beverages': [
+       'coke', 'apple', 'banana', 'beans', 'beer', 'beverage', 'biscuit', 'bread', 'brinjal', 'broccoli', 'cabbage', 'carrot', 'chicken', 'chili', 'chocolate', 'corn', 'crab', 'cutlery', 'cylinder', 'dinning', 'drinks', 'egg', 'fish', 'flour', 'fries', 'garlic', 'grape', 'greens', 'groceries', 'hamburger', 'honey', 'icecream', 'instantfood', 'juice', 'knifes', 'lemon', 'milk', 'mocktail', 'mushroom', 'noodles', 'oils', 'onion', 'orange', 'peas', 'pineapple', 'pizza', 'potatoes', 'sandwich', 'shrimp', 'steak', 'strawberry', 'streetf', 'tomato', 'vegetables', 'watermelon', 'wheat', 'zomato'
+     ],
+     'Other': [
+       'ac', 'accomidation', 'flight', 'fridge', 'furniture', 'help', 'idea', 'oiler', 'parking', 'pin', 'silver', 'spares', 'sports', 'sprout', 'stocks', 'unknown', 'chef', 'farmer', 'gas', 'knife', 'man', 'man2', 'man3', 'map', 'nodata', 'photographer', 'pot', 'user', 'woman'
+     ],
+   };
+ }
   static Widget getIcon(String? label, {double size = 24.0}) {
     if (label == null || label.isEmpty) {
       print('No label provided, using default icon');

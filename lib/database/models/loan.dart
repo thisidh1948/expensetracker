@@ -1,3 +1,4 @@
+import 'dart:math';
 class Loan {
   final int? id;
   final DateTime loanDate;
@@ -71,5 +72,19 @@ class Loan {
       purpose: purpose ?? this.purpose,
       remarks: remarks ?? this.remarks,
     );
+  }
+
+  double calculateCompoundInterest() {
+    final double principal = amount;
+    final double rate = interestRate / 100;
+    final int n = 1; // Compounded annually
+    final DateTime now = DateTime.now();
+    final double t = now.difference(loanDate).inDays / 365.0;
+
+    return principal * pow((1 + rate / n), n * t) - principal;
+  }
+ //write a method to calculate the total amount
+  double calculateTotalAmount() {
+    return amount + calculateCompoundInterest();
   }
 } 

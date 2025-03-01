@@ -5,10 +5,12 @@ import '../../database/models/loan.dart';
 
 class AddLoanSheet extends StatefulWidget {
   final String personRole;
-  
+  final Loan? loan;
+
   const AddLoanSheet({
     Key? key,
     required this.personRole,
+    this.loan,
   }) : super(key: key);
 
   @override
@@ -18,7 +20,7 @@ class AddLoanSheet extends StatefulWidget {
 class _AddLoanSheetState extends State<AddLoanSheet> {
   final _formKey = GlobalKey<FormState>();
   final _loansCRUD = LoansCRUD();
-  
+
   late DateTime _selectedDate;
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _interestRateController = TextEditingController();
@@ -29,8 +31,17 @@ class _AddLoanSheetState extends State<AddLoanSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
-    _interestRateController.text = '0.0'; // Default interest rate
+    if (widget.loan != null) {
+      _selectedDate = widget.loan!.loanDate;
+      _amountController.text = widget.loan!.amount.toString();
+      _interestRateController.text = widget.loan!.interestRate.toString();
+      _entityNameController.text = widget.loan!.entityName ?? '';
+      _purposeController.text = widget.loan!.purpose ?? '';
+      _remarksController.text = widget.loan!.remarks ?? '';
+    } else {
+      _selectedDate = DateTime.now();
+      _interestRateController.text = '0.0'; // Default interest rate
+    }
   }
 
   Future<void> _selectDate() async {
@@ -42,6 +53,40 @@ class _AddLoanSheetState extends State<AddLoanSheet> {
     );
     if (picked != null && picked != _selectedDate) {
       setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _saveLoan() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      final loan = Loan(
+        id: widget.loan?.id,
+        loanDate: _selectedDate,
+        amount: double.parse(_amountController.text),
+        interestRate: double.parse(_interestRateController.text),
+        status: widget.loan?.status ?? 'unpaid',
+        entityName: _entityNameController.text,
+        role: widget.personRole,
+        purpose: _purposeController.text,
+        remarks: _remarksController.text.isEmpty ? null : _remarksController.text,
+      );
+
+      if (widget.loan == null) {
+        await _loansCRUD.insert(loan);
+      } else {
+        await _loansCRUD.update(loan);
+      }
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving loan: $e')),
+        );
+      }
     }
   }
 
@@ -62,7 +107,9 @@ class _AddLoanSheetState extends State<AddLoanSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Add ${widget.personRole == 'taker' ? 'Debt' : 'Loan'}',
+                widget.loan == null
+                    ? 'Add ${widget.personRole == 'taker' ? 'Debt' : 'Loan'}'
+                    : 'Edit ${widget.personRole == 'taker' ? 'Debt' : 'Loan'}',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
@@ -79,7 +126,8 @@ class _AddLoanSheetState extends State<AddLoanSheet> {
                   labelText: 'Amount',
                   prefixText: '₹',
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
@@ -100,7 +148,8 @@ class _AddLoanSheetState extends State<AddLoanSheet> {
                   labelText: 'Interest Rate (% p.a.)',
                   suffixText: '%',
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
@@ -161,31 +210,13 @@ class _AddLoanSheetState extends State<AddLoanSheet> {
     );
   }
 
-  Future<void> _saveLoan() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      final loan = Loan(
-        loanDate: _selectedDate,
-        amount: double.parse(_amountController.text),
-        interestRate: double.parse(_interestRateController.text),
-        status: 'unpaid',
-        entityName: _entityNameController.text,  // Always save entityName
-        role: widget.personRole,
-        purpose: _purposeController.text,
-        remarks: _remarksController.text.isEmpty ? null : _remarksController.text,
-      );
-
-      await _loansCRUD.insert(loan);
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving loan: $e')),
-        );
-      }
-    }
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _interestRateController.dispose();
+    _entityNameController.dispose();
+    _purposeController.dispose();
+    _remarksController.dispose();
+    super.dispose();
   }
-} 
+}

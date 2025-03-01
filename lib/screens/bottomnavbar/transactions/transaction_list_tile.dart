@@ -74,17 +74,7 @@ class TransactionListTile extends StatelessWidget {
         ),
       ),
       onTap: onTap,
-      onLongPress: onLongPress,
+      onLongPress: onLongPress, // Add this line
     );
-  }
-
-  IconData _getTransactionIcon() {
-    if (transaction.item != null) {
-      return Icons.shopping_bag;
-    } else if (transaction.subcategory.isNotEmpty) {
-      return Icons.category;
-    } else {
-      return Icons.account_balance_wallet;
-    }
   }
 }

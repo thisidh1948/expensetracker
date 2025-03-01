@@ -37,7 +37,8 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _refreshData();
-    _transactionSubscription = TransactionEventBus().onTransactionChanged.listen((_) {
+    _transactionSubscription =
+        TransactionEventBus().onTransactionChanged.listen((_) {
       _refreshData();
     });
   }

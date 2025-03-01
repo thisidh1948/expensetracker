@@ -44,6 +44,7 @@ class DatabaseHelper {
     await db.execute(DatabaseTables.createTemplatesTable);
     await db.execute(DatabaseTables.createAppDataTable);
     await db.execute(DatabaseTables.createLoansTable);
+    await db.execute(DatabaseTables.createLabelsTable);
 
     await db.execute(DatabaseTables.insertDefaultAccounts);
     await db.execute(DatabaseTables.insertDefaultSections);

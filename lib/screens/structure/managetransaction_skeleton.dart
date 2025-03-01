@@ -68,7 +68,7 @@ class ManageTransactionSkeleton extends StatelessWidget {
               Icons.account_balance,
               () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Accounts')),
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: ATableNames.accounts)),
               ),
             ),
             const SizedBox(height: 16),
@@ -78,7 +78,7 @@ class ManageTransactionSkeleton extends StatelessWidget {
                 Icons.account_circle_rounded,
                   () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Sections')),
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: ATableNames.sections)),
               ),
             ),
             const SizedBox(height: 16),
@@ -98,7 +98,7 @@ class ManageTransactionSkeleton extends StatelessWidget {
               Icons.subject_rounded,
                   () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'SubCategories')),
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: ATableNames.subCategories)),
               ),
             ),
             const SizedBox(height: 16),
@@ -108,7 +108,16 @@ class ManageTransactionSkeleton extends StatelessWidget {
               Icons.add,
                   () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: 'Items')),
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: ATableNames.items))),
+              ),
+            const SizedBox(height: 16),
+            _buildNavigationButton(
+              context,
+              'Labels',
+              Icons.account_circle_rounded,
+                  () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ComStructurePage(structureType: ATableNames.labels)),
               ),
             ),
             const SizedBox(height: 16),

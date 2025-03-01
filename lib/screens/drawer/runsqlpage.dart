@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:csv/csv.dart';
 import 'package:expense_tracker/database/database_helper.dart';
+import '../utils/fileutils.dart';
 
 class RunSQLPage extends StatefulWidget {
   @override
@@ -32,6 +35,18 @@ class _RunSQLPageState extends State<RunSQLPage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _downloadCSV() async {
+    if (_results.isEmpty) return;
+
+    List<List<dynamic>> csvData = [
+      _results.first.keys.toList(), // Header row
+      ..._results.map((row) => row.values.toList()), // Data rows
+    ];
+
+    String csv = const ListToCsvConverter().convert(csvData);
+    await FileUtils.saveCSVFile(context, csv, 'results');
   }
 
   Widget _buildResultTable() {
@@ -91,6 +106,11 @@ class _RunSQLPageState extends State<RunSQLPage> {
               });
             },
             tooltip: 'Clear',
+          ),
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: _downloadCSV,
+            tooltip: 'Download CSV',
           ),
         ],
       ),

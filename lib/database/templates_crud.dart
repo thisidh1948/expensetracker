@@ -37,8 +37,6 @@ class Templates_crud {
     final db = await database.database;
 
     final List<Map<String, dynamic>> maps = await db!.query('Templates');
-    print("data:67898000");
-    print(maps.toString());
     return List.generate(maps.length, (i) => Template.fromMap(maps[i]));
   }
 

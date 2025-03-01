@@ -5,15 +5,18 @@ import '../../database/models/loan.dart';
 class LoanListTile extends StatelessWidget {
   final Loan loan;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   const LoanListTile({
     Key? key,
     required this.loan,
     required this.onTap,
+    required this.onLongPress,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final double compoundInterest = loan.calculateCompoundInterest();
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
@@ -53,9 +56,13 @@ class LoanListTile extends StatelessWidget {
             Text(
               '₹${loan.amount.toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            Text(
+              '₹${compoundInterest.toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             Text(
               '${loan.interestRate}% p.a.',
@@ -64,7 +71,8 @@ class LoanListTile extends StatelessWidget {
           ],
         ),
         onTap: onTap,
+        onLongPress: onLongPress,
       ),
     );
   }
-} 
+}

@@ -12,6 +12,7 @@ class DbTransaction {
   final double amount;
   final DateTime? date;
   final String? note;
+  final String? location;
 
   DbTransaction({
     this.id,
@@ -27,6 +28,7 @@ class DbTransaction {
     required this.amount,
     this.date,
     this.note,
+    this.location,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +46,7 @@ class DbTransaction {
       'amount': amount,
       'date': date?.toIso8601String(),
       'note': note?.toLowerCase(),
+      'location': location?.toLowerCase(),
     };
   }
 
@@ -63,6 +66,7 @@ class DbTransaction {
       amount: map['amount']?.toDouble() ?? 0.0,
       date: map['date'] != null ? DateTime.parse(map['date']) : null,
       note: map['note'],
+      location: map['location'],
     );
   }
 
@@ -80,6 +84,7 @@ class DbTransaction {
     double? amount,
     DateTime? date,
     String? note,
+    String? location,
   }) {
     return DbTransaction(
       id: id ?? this.id,
@@ -95,11 +100,12 @@ class DbTransaction {
       amount: amount ?? this.amount,
       date: date ?? this.date,
       note: note ?? this.note,
+      location: location ?? this.location,
     );
   }
 
   @override
   String toString() {
-    return 'DbTransaction{id: $id, account: $account, section: $section, category: $category, subcategory: $subcategory, item: $item, cd: $cd, units: $units, ppu: $ppu, tax: $tax, amount: $amount, date: $date, note: $note}';
+    return 'DbTransaction{id: $id, account: $account, section: $section, category: $category, subcategory: $subcategory, item: $item, cd: $cd, units: $units, ppu: $ppu, tax: $tax, amount: $amount, date: $date, note: $note}, location: $location';
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../database/models/dbtransaction.dart';
+import '../../../widgets/confirmation_dialog.dart';
 import '../../utils/transaction_utils.dart';
 import 'month_selector.dart';
 import 'package:expense_tracker/database/structures_crud.dart';
@@ -37,9 +38,6 @@ class _TransactionPageState extends State<TransactionPage> {
   Future<void> _loadStructureIcons() async {
     try {
       final icons = await _structuresCRUD.getAllStructureIcons();
-      print("Structure icons loaded:");
-      print(icons);
-      
       setState(() {
         structureIcons = icons;
       });
@@ -143,7 +141,6 @@ class _TransactionPageState extends State<TransactionPage> {
           );
         },
       ),
-
     );
   }
 

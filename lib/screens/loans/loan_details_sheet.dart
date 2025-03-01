@@ -41,6 +41,10 @@ class LoanDetailsSheet extends StatelessWidget {
             '₹${loan.amount.toStringAsFixed(2)}'),
           _buildDetailRow(context, 'Interest Rate', 
             '${loan.interestRate}% p.a.'),
+          _buildDetailRow(context, 'Interest',
+              '${loan.calculateCompoundInterest().toStringAsFixed(2)}'),
+          _buildDetailRow(context, 'Total Amount',
+            '₹${loan.calculateTotalAmount().toStringAsFixed(2)}'),
           if (loan.entityName != null)
             _buildDetailRow(context, 'Entity', loan.entityName!),
           _buildDetailRow(context, 'Purpose', loan.purpose ?? 'N/A'),

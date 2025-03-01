@@ -123,8 +123,6 @@ class _TemplatesPageState extends State<TemplatesPage> {
                                 onTap: () async {
                                   // Handle template selection
                                   final DbTransaction transaction = template.toDbTransaction();
-                                  print("2525625");
-                                  print(transaction.toString());
                                   // Navigate to AddTransactionPage with the transaction
                                   final result = await Navigator.push(
                                     context,

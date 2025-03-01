@@ -11,6 +11,7 @@ import '../loans/debts_page.dart';
 import '../loans/loaned_page.dart';
 
 import '../auth/authprovider.dart';
+import 'labelspage.dart';
 
 Drawer customDrawer(BuildContext context) {
   return Drawer(
@@ -123,6 +124,15 @@ Drawer customDrawer(BuildContext context) {
                             builder: (context) => const LoanedPage(),
                           ),
                         ),
+                      ),
+                      ListTile(
+                        title: Text('Labels'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => LabelsPage()),
+                          );
+                        },
                       ),
                       const Divider(),
                       // Section: Settings

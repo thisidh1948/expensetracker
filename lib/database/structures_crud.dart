@@ -12,7 +12,17 @@ class StructuresCRUD {
   // Account operations
   Future<void> insert(String tableName, StructModel entity) async {
     final db = await _db.database;
-    await db!.insert(tableName, entity.toMap());
+    await db!.insert(tableName, entity.toMap(tableName));
+  }
+
+  Future<void> update(String tableName, StructModel entity) async {
+    final db = await _db.database;
+    await db!.update(
+      tableName,
+      entity.toMap(tableName),
+      where: 'name = ?',
+      whereArgs: [entity.name],
+    );
   }
 
   Future<List<StructModel>> getAllTableData(String tableName) async {
@@ -29,16 +39,6 @@ class StructuresCRUD {
       columns: ['name'],
     );
     return maps.map((map) => map['name'] as String).toList();
-  }
-
-  Future<void> update(String tableName, StructModel entity) async {
-    final db = await _db.database;
-    await db!.update(
-      tableName,
-      entity.toMap(),
-      where: 'name = ?',
-      whereArgs: [entity.name],
-    );
   }
 
   Future<void> delete(String tableName, String name) async {
